@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import "./styles.css";
 
@@ -498,6 +499,11 @@ function renderGraph(maxDistance: number) {
 }
 
 function bindEvents() {
+  document.querySelector<HTMLElement>(".brand-icon")?.addEventListener("pointerdown", async (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    await getCurrentWindow().startDragging();
+  });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {
     settingsOpen = true;
     render();

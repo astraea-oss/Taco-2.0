@@ -72,6 +72,8 @@ button {
   color: #f0b84f;
   border: 1px solid #40505c;
   background: #182129;
+  cursor: move;
+  user-select: none;
 }
 
 h1,
