@@ -111,6 +111,97 @@ function cleanIntelLine(rawLine: string) {
   return rawLine.replace(/^\s*\[\s*\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}:\d{2}\s*\]\s*/, "");
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function externalLink(label: string, href: string, className = "intel-link") {
+  return `<a class="${className}" href="${href}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+}
+
+function zkillUrl(characterName: string) {
+  return `https://zkillboard.com/search/${encodeURIComponent(characterName)}/`;
+}
+
+function dotlanUrl(systemName: string) {
+  return `https://evemaps.dotlan.net/system/${encodeURIComponent(systemName)}`;
+}
+
+function likelyPilotPhrase(text: string) {
+  const cleaned = text.replace(/[>*]/g, " ").trim();
+  if (!cleaned) return "";
+  const stopWords = new Set([
+    "astero",
+    "asteros",
+    "buzzard",
+    "clear",
+    "clr",
+    "gate",
+    "legion",
+    "loki",
+    "sabre",
+    "tengu",
+    "wh",
+  ]);
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const picked: string[] = [];
+  for (const word of words) {
+    const normalized = word.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!normalized || stopWords.has(normalized) || /\d/.test(normalized)) break;
+    picked.push(word);
+    if (picked.length === 2) break;
+  }
+  return picked.join(" ");
+}
+
+function linkifyPilotPhrase(text: string, pilotName: string) {
+  if (!pilotName) return escapeHtml(text);
+  const pattern = new RegExp(`\\b${escapeRegex(pilotName)}\\b`);
+  const match = text.match(pattern);
+  if (!match || match.index === undefined) return escapeHtml(text);
+  return [
+    escapeHtml(text.slice(0, match.index)),
+    externalLink(match[0], zkillUrl(match[0])),
+    escapeHtml(text.slice(match.index + match[0].length)),
+  ].join("");
+}
+
+function renderIntelLine(report: IntelReport) {
+  const cleaned = cleanIntelLine(report.raw_line);
+  const [speaker, ...bodyParts] = cleaned.split(" > ");
+  if (!bodyParts.length) return escapeHtml(cleaned);
+
+  const body = bodyParts.join(" > ");
+  const systemPattern = new RegExp(`\\b${escapeRegex(report.system)}\\b`, "i");
+  const match = body.match(systemPattern);
+  const speakerLink = externalLink(speaker.trim(), zkillUrl(speaker.trim()));
+  if (!match || match.index === undefined) {
+    return `${speakerLink} &gt; ${escapeHtml(body)}`;
+  }
+
+  const beforeSystem = body.slice(0, match.index);
+  const systemText = body.slice(match.index, match.index + match[0].length);
+  const afterSystem = body.slice(match.index + match[0].length);
+  const beforePilot = likelyPilotPhrase(beforeSystem);
+  const afterPilot = likelyPilotPhrase(afterSystem);
+  return [
+    speakerLink,
+    " &gt; ",
+    linkifyPilotPhrase(beforeSystem, beforePilot),
+    externalLink(systemText, dotlanUrl(report.system)),
+    linkifyPilotPhrase(afterSystem, afterPilot),
+  ].join("");
+}
+
 function playAlert() {
   if (!settings.sound_enabled) return;
   const audioContext = new AudioContext();
@@ -204,7 +295,7 @@ function render() {
                           <strong>${report.system}</strong>
                           <span>${distanceLabel(report)} &middot; ${formatClock(report.timestamp_ms)}</span>
                         </div>
-                        <p>${cleanIntelLine(report.raw_line)}</p>
+                        <p>${renderIntelLine(report)}</p>
                       </article>
                     `,
                   )
