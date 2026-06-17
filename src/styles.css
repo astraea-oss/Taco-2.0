@@ -43,9 +43,10 @@ button {
 }
 
 .sidebar {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 10px;
+  overflow: hidden;
 }
 
 .intel-panel {
@@ -60,7 +61,6 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
 }
 
 .brand-icon {
@@ -95,7 +95,17 @@ h2 {
 
 .sidebar-summary {
   display: grid;
+  align-content: start;
   gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-summary::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .sidebar-summary div {
@@ -129,7 +139,6 @@ h2 {
   gap: 8px;
   width: 100%;
   min-height: 34px;
-  margin-top: auto;
   border: 1px solid #40505c;
   color: #e7edf2;
   background: #182129;
