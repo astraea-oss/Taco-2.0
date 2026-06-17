@@ -1,8 +1,9 @@
 use anyhow::{Context, Result};
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::fs;
+use std::collections::{HashMap, VecDeque};
+use std::fs::{self, File};
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -113,8 +114,17 @@ pub struct AppState {
     universe: Universe,
     settings: Mutex<Settings>,
     reports: Mutex<Vec<IntelReport>>,
-    seen_lines: Mutex<HashSet<String>>,
+    file_states: Mutex<HashMap<String, FilePollState>>,
     last_errors: Mutex<Vec<String>>,
+}
+
+#[derive(Debug, Default)]
+struct FilePollState {
+    byte_offset: u64,
+    pending_line: String,
+    utf16_le: bool,
+    initialized: bool,
+    last_system_by_speaker: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -426,15 +436,27 @@ fn channel_from_log_filename(path: &Path) -> Option<String> {
     }
 }
 
-fn decode_chatlog_bytes(bytes: &[u8]) -> Result<String> {
-    let looks_utf16_le = bytes.starts_with(&[0xff, 0xfe])
+fn looks_utf16_le(bytes: &[u8]) -> bool {
+    bytes.starts_with(&[0xff, 0xfe])
         || bytes
             .chunks_exact(2)
             .take(64)
             .filter(|chunk| chunk[1] == 0)
             .count()
-            > 16;
-    if looks_utf16_le {
+            > 16
+}
+
+fn decode_utf16_le_bytes(bytes: &[u8]) -> String {
+    let units = bytes
+        .chunks_exact(2)
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+        .collect::<Vec<_>>();
+    String::from_utf16_lossy(&units)
+}
+
+#[cfg(test)]
+fn decode_chatlog_bytes(bytes: &[u8]) -> Result<String> {
+    if looks_utf16_le(bytes) {
         let units = bytes
             .chunks_exact(2)
             .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
@@ -445,9 +467,12 @@ fn decode_chatlog_bytes(bytes: &[u8]) -> Result<String> {
     }
 }
 
-fn read_chatlog(path: &Path) -> Result<String> {
-    let bytes = fs::read(path).with_context(|| format!("Failed to read {}", path.display()))?;
-    decode_chatlog_bytes(&bytes)
+fn decode_chatlog_chunk(bytes: &[u8], utf16_le: bool) -> Result<String> {
+    if utf16_le {
+        Ok(decode_utf16_le_bytes(bytes))
+    } else {
+        String::from_utf8(bytes.to_vec()).context("chat log chunk is not valid UTF-8")
+    }
 }
 
 fn txt_files_in_folder(path: &Path) -> Vec<PathBuf> {
@@ -499,35 +524,90 @@ fn watched_files(settings: &Settings) -> Vec<PathBuf> {
     files
 }
 
-fn poll_one_file(path: &Path, state: &AppState, _current_system: &str) -> Result<Vec<IntelReport>> {
-    let key = path.to_string_lossy().to_string();
-    let content = read_chatlog(path).with_context(|| format!("Failed to decode {}", key))?;
-    let scan_timestamp = now_ms();
+fn parse_poll_text(
+    text: &str,
+    source: &str,
+    scan_timestamp: u128,
+    app_state: &AppState,
+    file_state: &mut FilePollState,
+) -> Vec<IntelReport> {
+    let mut combined = String::new();
+    combined.push_str(&file_state.pending_line);
+    combined.push_str(text);
+    let has_partial_tail = !combined.ends_with('\n') && !combined.ends_with('\r');
+    let mut lines = combined
+        .lines()
+        .map(|line| line.to_string())
+        .collect::<Vec<_>>();
+    if has_partial_tail {
+        file_state.pending_line = lines.pop().unwrap_or_default();
+    } else {
+        file_state.pending_line.clear();
+    }
+
     let mut parsed = Vec::new();
-    let mut last_system_by_speaker: HashMap<String, String> = HashMap::new();
-    for line in content.lines() {
-        let line_key = format!("{key}:{line}");
-        let is_new_line = state.seen_lines.lock().unwrap().insert(line_key);
-        let timestamp = eve_log_timestamp_ms(line).unwrap_or(scan_timestamp);
-        let speaker = chat_speaker(line);
+    for line in lines {
+        let timestamp = eve_log_timestamp_ms(&line).unwrap_or(scan_timestamp);
+        let speaker = chat_speaker(&line);
         let fallback_system = speaker
             .as_ref()
-            .and_then(|speaker| last_system_by_speaker.get(speaker))
+            .and_then(|speaker| file_state.last_system_by_speaker.get(speaker))
             .map(String::as_str);
         let reports = parse_intel_line(
-            &state.universe,
-            line,
-            &key,
+            &app_state.universe,
+            &line,
+            source,
             timestamp,
             fallback_system,
         );
         if let (Some(speaker), Some(report)) = (speaker, reports.first()) {
-            last_system_by_speaker.insert(speaker, report.system.clone());
+            file_state
+                .last_system_by_speaker
+                .insert(speaker, report.system.clone());
         }
-        if is_new_line {
-            parsed.extend(reports);
-        }
+        parsed.extend(reports);
     }
+    parsed
+}
+
+fn poll_one_file(path: &Path, state: &AppState, _current_system: &str) -> Result<Vec<IntelReport>> {
+    let key = path.to_string_lossy().to_string();
+    let metadata = fs::metadata(path).with_context(|| format!("Failed to stat {}", key))?;
+    let file_len = metadata.len();
+    let mut file_states = state.file_states.lock().unwrap();
+    let file_state = file_states.entry(key.clone()).or_default();
+    if file_len < file_state.byte_offset {
+        *file_state = FilePollState::default();
+    }
+    if file_state.initialized && file_len == file_state.byte_offset {
+        return Ok(Vec::new());
+    }
+
+    let read_from = if file_state.initialized {
+        file_state.byte_offset
+    } else {
+        0
+    };
+    let mut file = File::open(path).with_context(|| format!("Failed to open {}", key))?;
+    file.seek(SeekFrom::Start(read_from))
+        .with_context(|| format!("Failed to seek {}", key))?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes)
+        .with_context(|| format!("Failed to read {}", key))?;
+    if bytes.is_empty() {
+        file_state.initialized = true;
+        file_state.byte_offset = file_len;
+        return Ok(Vec::new());
+    }
+    if !file_state.initialized {
+        file_state.utf16_le = looks_utf16_le(&bytes);
+    }
+    let text = decode_chatlog_chunk(&bytes, file_state.utf16_le)
+        .with_context(|| format!("Failed to decode {}", key))?;
+    let scan_timestamp = now_ms();
+    let parsed = parse_poll_text(&text, &key, scan_timestamp, state, file_state);
+    file_state.initialized = true;
+    file_state.byte_offset = file_len;
     Ok(parsed)
 }
 
@@ -594,7 +674,7 @@ fn scan_log_channels(folder: String) -> Vec<String> {
 #[tauri::command]
 fn rescan_watch_paths(state: State<'_, AppState>) {
     state.reports.lock().unwrap().clear();
-    state.seen_lines.lock().unwrap().clear();
+    state.file_states.lock().unwrap().clear();
 }
 
 #[tauri::command]
@@ -783,7 +863,7 @@ pub fn run() {
             universe,
             settings: Mutex::new(Settings::default()),
             reports: Mutex::new(Vec::new()),
-            seen_lines: Mutex::new(HashSet::new()),
+            file_states: Mutex::new(HashMap::new()),
             last_errors: Mutex::new(Vec::new()),
         })
         .invoke_handler(tauri::generate_handler![
@@ -803,6 +883,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn graph_radius_returns_expected_distances() {
@@ -1000,6 +1081,52 @@ mod tests {
             .map(|report| report.system.as_str())
             .collect::<Vec<_>>();
         assert_eq!(systems, vec!["5M2-KP"]);
+    }
+
+    #[test]
+    fn poll_one_file_reads_only_appended_chatlog_lines() {
+        fn utf16_bytes(text: &str) -> Vec<u8> {
+            let mut bytes = Vec::new();
+            for unit in text.encode_utf16() {
+                bytes.extend_from_slice(&unit.to_le_bytes());
+            }
+            bytes
+        }
+
+        let path = std::env::temp_dir().join(format!("evetel-test-{}.txt", Uuid::new_v4()));
+        let first_line =
+            "\u{feff}[ 2026.06.17 12:11:51 ] Ranadaine Oramara > Vert01 KDG-TA\r\n";
+        fs::write(&path, utf16_bytes(first_line)).unwrap();
+        let state = AppState {
+            universe: Universe::load().unwrap(),
+            settings: Mutex::new(Settings::default()),
+            reports: Mutex::new(Vec::new()),
+            file_states: Mutex::new(HashMap::new()),
+            last_errors: Mutex::new(Vec::new()),
+        };
+
+        let first_poll = poll_one_file(&path, &state, "04-EHC").unwrap();
+        assert_eq!(first_poll.len(), 1);
+        assert_eq!(first_poll[0].system, "KDG-TA");
+
+        let second_poll = poll_one_file(&path, &state, "04-EHC").unwrap();
+        assert!(second_poll.is_empty());
+
+        let followup_line =
+            "[ 2026.06.17 12:12:02 ] Ranadaine Oramara > Legacy Destroyer sabre\r\n";
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .unwrap();
+        use std::io::Write;
+        file.write_all(&utf16_bytes(followup_line)).unwrap();
+
+        let third_poll = poll_one_file(&path, &state, "04-EHC").unwrap();
+        assert_eq!(third_poll.len(), 1);
+        assert_eq!(third_poll[0].system, "KDG-TA");
+        assert_eq!(third_poll[0].ship_hint.as_deref(), Some("SABRE"));
+
+        let _ = fs::remove_file(path);
     }
 
     #[test]
