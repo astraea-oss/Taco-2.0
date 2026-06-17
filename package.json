@@ -1,0 +1,24 @@
+{
+  "name": "eve-intel-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "portable": "tauri build && node scripts/build-portable.mjs",
+    "build:universe": "node scripts/build-universe-from-sde.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/plugin-dialog": "^2.4.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.0",
+    "csv-parse": "^5.6.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
