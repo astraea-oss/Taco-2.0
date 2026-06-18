@@ -333,6 +333,37 @@ select:focus {
   border-bottom: 1px solid #263039;
 }
 
+.topbar-actions,
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.window-control {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid #31404b;
+  border-radius: 5px;
+  background: #121a20;
+  color: #c8d4dc;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.window-control:hover {
+  border-color: #4d6472;
+  background: #1a252c;
+}
+
+.window-control.close:hover {
+  border-color: #9d3834;
+  background: #3a1719;
+  color: #ffffff;
+}
+
 .status-pill {
   border: 1px solid #2f765a;
   color: #7be0b0;

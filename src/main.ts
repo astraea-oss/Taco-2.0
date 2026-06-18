@@ -276,7 +276,13 @@ function render() {
             <h2>${settings.current_system}</h2>
             <p>${nearbyReports.length} active reports inside ${settings.jump_radius} jumps</p>
           </div>
-          <div class="status-pill">${mapView ? "Live" : "Loading"}</div>
+          <div class="topbar-actions">
+            <div class="status-pill">${mapView ? "Live" : "Loading"}</div>
+            <div class="window-controls">
+              <button id="window-minimize" class="window-control" title="Minimize" aria-label="Minimize">-</button>
+              <button id="window-close" class="window-control close" title="Close" aria-label="Close">x</button>
+            </div>
+          </div>
         </div>
         <div class="map-wrap">
           ${renderGraph(maxDistance)}
@@ -499,11 +505,22 @@ function renderGraph(maxDistance: number) {
 }
 
 function bindEvents() {
+  const currentWindow = getCurrentWindow();
   document.querySelector<HTMLElement>(".brand-icon")?.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
     event.preventDefault();
-    getCurrentWindow().startDragging().catch((error) => {
+    currentWindow.startDragging().catch((error) => {
       console.error("Failed to start window drag", error);
+    });
+  });
+  document.querySelector<HTMLButtonElement>("#window-minimize")?.addEventListener("click", () => {
+    currentWindow.minimize().catch((error) => {
+      console.error("Failed to minimize window", error);
+    });
+  });
+  document.querySelector<HTMLButtonElement>("#window-close")?.addEventListener("click", () => {
+    currentWindow.close().catch((error) => {
+      console.error("Failed to close window", error);
     });
   });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {

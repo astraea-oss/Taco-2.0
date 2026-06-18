@@ -14,7 +14,8 @@
       {
         "title": "EVE Intel Companion",
         "width": 1440,
-        "height": 920
+        "height": 920,
+        "decorations": false
       }
     ],
     "security": {
