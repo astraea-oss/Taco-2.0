@@ -87,6 +87,8 @@ pub struct GraphNode {
     x: f32,
     y: f32,
     active_intel_count: usize,
+    hostile_count: usize,
+    ship_summary: Vec<String>,
     severity: IntelSeverity,
     latest_report: Option<IntelReport>,
 }
@@ -375,13 +377,46 @@ fn looks_like_system_report(line: &str, systems: &[String]) -> bool {
 fn ship_hint(line: &str) -> Option<String> {
     let lower = line.to_lowercase();
     let ships = [
-        "sabre", "loki", "tengu", "legion", "proteus", "redeemer", "bombers", "bomber", "vargur",
-        "marauder", "dictor", "draugur", "kikimora", "caracal", "cerberus",
+        "asteros", "astero", "buzzard", "sabre", "vedmak", "hecate", "griffin", "loki", "tengu",
+        "legion", "proteus", "redeemer", "bombers", "bomber", "vargur", "marauder", "dictor",
+        "draugur", "kikimora", "caracal", "cerberus",
     ];
     ships
         .iter()
         .find(|ship| lower.contains(**ship))
         .map(|ship| ship.to_ascii_uppercase())
+}
+
+fn explicit_hostile_count(line: &str) -> Option<usize> {
+    message_body(line)
+        .split_whitespace()
+        .filter_map(|raw| {
+            let token = raw.trim_matches(|char: char| !char.is_ascii_alphanumeric() && char != '+');
+            let count = token
+                .strip_prefix('+')
+                .or_else(|| token.strip_suffix('+'))?;
+            if count.chars().all(|char| char.is_ascii_digit()) {
+                count.parse::<usize>().ok()
+            } else {
+                None
+            }
+        })
+        .filter(|count| *count > 0)
+        .max()
+}
+
+fn report_hostile_count(report: &IntelReport) -> usize {
+    explicit_hostile_count(&report.raw_line).unwrap_or(1)
+}
+
+fn report_ship_summary(reports: &[IntelReport]) -> Vec<String> {
+    let mut ships = reports
+        .iter()
+        .filter_map(|report| report.ship_hint.clone())
+        .collect::<Vec<_>>();
+    ships.sort();
+    ships.dedup();
+    ships
 }
 
 fn normalized_intel_line(line: &str) -> String {
@@ -877,6 +912,8 @@ fn build_map_view(
             } else {
                 IntelSeverity::Clear
             };
+            let hostile_count = system_reports.iter().map(report_hostile_count).sum();
+            let ship_summary = report_ship_summary(&system_reports);
             nodes.push(GraphNode {
                 id: universe
                     .get(name)
@@ -887,6 +924,8 @@ fn build_map_view(
                 x,
                 y,
                 active_intel_count: system_reports.len(),
+                hostile_count,
+                ship_summary,
                 severity,
                 latest_report: system_reports
                     .into_iter()
@@ -1111,6 +1150,29 @@ mod tests {
     }
 
     #[test]
+    fn hostile_count_reads_plus_prefix_and_suffix_counts() {
+        let universe = Universe::load().unwrap();
+        let prefixed = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Hulk Harley > 04-EHC Hulk Harley +4 Asteros",
+            "test",
+            1,
+            None,
+        );
+        let suffixed = parse_intel_line(
+            &universe,
+            "[12:02:37] Pentagruel > 8-WYQZ 5+",
+            "test",
+            2,
+            None,
+        );
+
+        assert_eq!(report_hostile_count(&prefixed[0]), 4);
+        assert_eq!(report_hostile_count(&suffixed[0]), 5);
+        assert_eq!(prefixed[0].ship_hint.as_deref(), Some("ASTEROS"));
+    }
+
+    #[test]
     fn chat_speaker_is_extracted_from_eve_log_line() {
         assert_eq!(
             chat_speaker("[ 2026.06.17 12:11:51 ] Ranadaine Oramara > Vert01 KDG-TA").as_deref(),
@@ -1326,6 +1388,28 @@ mod tests {
         assert_eq!(view.all_reports.len(), 2);
         assert_eq!(view.all_reports[0].id, "clear");
         assert!(view.active_reports.is_empty());
+    }
+
+    #[test]
+    fn map_node_uses_hostile_count_and_ship_summary() {
+        let universe = Universe::load().unwrap();
+        let reports = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Hulk Harley > 04-EHC Hulk Harley +4 Asteros",
+            "test",
+            1,
+            None,
+        );
+
+        let view = build_map_view(&universe, "04-EHC".to_string(), 1, reports);
+        let node = view
+            .nodes
+            .iter()
+            .find(|node| node.name == "04-EHC")
+            .expect("reported system should be visible");
+        assert_eq!(node.active_intel_count, 1);
+        assert_eq!(node.hostile_count, 4);
+        assert_eq!(node.ship_summary, vec!["ASTEROS".to_string()]);
     }
 
     #[test]

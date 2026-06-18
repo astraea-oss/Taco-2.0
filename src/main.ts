@@ -27,6 +27,8 @@ type GraphNode = {
   x: number;
   y: number;
   active_intel_count: number;
+  hostile_count: number;
+  ship_summary: string[];
   severity: "clear" | "watch" | "danger";
   latest_report?: IntelReport;
 };
@@ -516,11 +518,13 @@ function renderGraph(maxDistance: number) {
           .map((node) => {
             const dangerClass = node.severity === "danger" ? "danger" : node.severity === "watch" ? "watch" : "";
             const centerClass = node.name === settings.current_system ? "center" : "";
+            const ships = node.ship_summary.length ? node.ship_summary.join(", ") : "Unknown";
+            const tooltip = `${node.name} · ${node.distance}j · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`;
             return `
               <g class="map-node ${dangerClass} ${centerClass}" transform="translate(${node.x}, ${node.y})">
-                <title>${node.name} · ${node.distance}j · ${severityLabel(node.latest_report)}</title>
+                <title>${escapeHtml(tooltip)}</title>
                 <circle r="${node.name === settings.current_system ? 13 : 8}" />
-                ${node.active_intel_count ? `<text class="count" y="-17">${node.active_intel_count}</text>` : ""}
+                ${node.hostile_count ? `<text class="count" y="-17">${node.hostile_count}</text>` : ""}
               </g>
             `;
           })
