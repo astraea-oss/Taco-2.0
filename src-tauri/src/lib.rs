@@ -1,14 +1,14 @@
 use anyhow::{Context, Result};
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::{self, File};
+use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager, State};
-use uuid::Uuid;
 
 const UNIVERSE_JSON: &str = include_str!("../resources/universe.json");
 
@@ -216,8 +216,12 @@ fn contains_system_token(haystack: &str, needle: &str) -> bool {
         let end = start + needle.len();
         let before = haystack[..start].chars().next_back();
         let after = haystack[end..].chars().next();
-        let bounded_before = before.map(|char| !is_system_token_char(char)).unwrap_or(true);
-        let bounded_after = after.map(|char| !is_system_token_char(char)).unwrap_or(true);
+        let bounded_before = before
+            .map(|char| !is_system_token_char(char))
+            .unwrap_or(true);
+        let bounded_after = after
+            .map(|char| !is_system_token_char(char))
+            .unwrap_or(true);
         if bounded_before && bounded_after {
             return true;
         }
@@ -362,7 +366,9 @@ fn looks_like_system_report(line: &str, systems: &[String]) -> bool {
         let remaining = body_lower.replace(&system_lower, "");
         remaining.chars().any(|char| char.is_alphabetic())
             || remaining.contains('+')
-            || remaining.split_whitespace().any(|part| part.parse::<u32>().is_ok())
+            || remaining
+                .split_whitespace()
+                .any(|part| part.parse::<u32>().is_ok())
     })
 }
 
@@ -376,6 +382,54 @@ fn ship_hint(line: &str) -> Option<String> {
         .iter()
         .find(|ship| lower.contains(**ship))
         .map(|ship| ship.to_ascii_uppercase())
+}
+
+fn normalized_intel_line(line: &str) -> String {
+    line.trim_start_matches('\u{feff}')
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+fn report_dedupe_key(
+    system: &str,
+    line: &str,
+    timestamp_ms: u128,
+    severity: &IntelSeverity,
+) -> String {
+    format!(
+        "{}|{}|{:?}|{}",
+        system,
+        timestamp_ms,
+        severity,
+        normalized_intel_line(line)
+    )
+}
+
+fn stable_report_id(
+    system: &str,
+    line: &str,
+    timestamp_ms: u128,
+    severity: &IntelSeverity,
+) -> String {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    report_dedupe_key(system, line, timestamp_ms, severity).hash(&mut hasher);
+    format!("intel-{:016x}", hasher.finish())
+}
+
+fn report_key(report: &IntelReport) -> String {
+    report_dedupe_key(
+        &report.system,
+        &report.raw_line,
+        report.timestamp_ms,
+        &report.severity,
+    )
+}
+
+fn dedupe_reports(reports: &mut Vec<IntelReport>) {
+    let mut seen = HashSet::new();
+    reports.retain(|report| seen.insert(report_key(report)));
 }
 
 fn parse_intel_line(
@@ -398,21 +452,22 @@ fn parse_intel_line(
     if !clear && !is_intel_line(line) && !looks_like_system_report(line, &systems) {
         return Vec::new();
     }
+    let severity = if clear {
+        IntelSeverity::Clear
+    } else if is_status_query_line(line) {
+        IntelSeverity::Watch
+    } else {
+        IntelSeverity::Danger
+    };
     systems
         .into_iter()
         .map(|system| IntelReport {
-            id: Uuid::new_v4().to_string(),
+            id: stable_report_id(&system, line, timestamp_ms, &severity),
             system,
             raw_line: line.trim().to_string(),
             source: source.to_string(),
             timestamp_ms,
-            severity: if clear {
-                IntelSeverity::Clear
-            } else if is_status_query_line(line) {
-                IntelSeverity::Watch
-            } else {
-                IntelSeverity::Danger
-            },
+            severity: severity.clone(),
             ship_hint: ship_hint(line),
             character_hint: None,
             distance: None,
@@ -695,10 +750,17 @@ fn poll_logs(state: State<'_, AppState>) -> Result<Vec<IntelReport>, String> {
         }
     }
     *state.last_errors.lock().unwrap() = errors;
+    dedupe_reports(&mut new_reports);
     let mut reports = state.reports.lock().unwrap();
-    reports.extend(new_reports.clone());
+    let existing_keys = reports.iter().map(report_key).collect::<HashSet<_>>();
+    let unique_new_reports = new_reports
+        .into_iter()
+        .filter(|report| !existing_keys.contains(&report_key(report)))
+        .collect::<Vec<_>>();
+    reports.extend(unique_new_reports.clone());
     prune_reports(&mut reports, settings.intel_expiry_minutes);
-    Ok(new_reports)
+    dedupe_reports(&mut reports);
+    Ok(unique_new_reports)
 }
 
 fn build_map_view(
@@ -890,6 +952,7 @@ pub fn run() {
 mod tests {
     use super::*;
     use std::collections::HashSet;
+    use uuid::Uuid;
 
     #[test]
     fn graph_radius_returns_expected_distances() {
@@ -1050,8 +1113,7 @@ mod tests {
     #[test]
     fn chat_speaker_is_extracted_from_eve_log_line() {
         assert_eq!(
-            chat_speaker("[ 2026.06.17 12:11:51 ] Ranadaine Oramara > Vert01 KDG-TA")
-                .as_deref(),
+            chat_speaker("[ 2026.06.17 12:11:51 ] Ranadaine Oramara > Vert01 KDG-TA").as_deref(),
             Some("Ranadaine Oramara")
         );
     }
@@ -1090,6 +1152,54 @@ mod tests {
     }
 
     #[test]
+    fn same_chat_line_from_multiple_logs_gets_one_report_id() {
+        let universe = Universe::load().unwrap();
+        let line = "[ 2026.06.17 12:28:35 ] Dionysus Sputnik > Skarovin Vedmak Jumped 5IH-GL";
+        let reports = ["char-one", "char-two", "char-three"]
+            .into_iter()
+            .flat_map(|source| parse_intel_line(&universe, line, source, 1_781_699_315_000, None))
+            .collect::<Vec<_>>();
+
+        assert_eq!(reports.len(), 3);
+        assert_eq!(
+            reports
+                .iter()
+                .map(|report| &report.id)
+                .collect::<HashSet<_>>()
+                .len(),
+            1
+        );
+
+        let mut deduped = reports;
+        dedupe_reports(&mut deduped);
+        assert_eq!(deduped.len(), 1);
+        assert_eq!(deduped[0].system, "5IH-GL");
+    }
+
+    #[test]
+    fn repeated_reports_at_different_times_stay_separate() {
+        let universe = Universe::load().unwrap();
+        let first = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 12:28:35 ] Dionysus Sputnik > Skarovin Vedmak Jumped 5IH-GL",
+            "char-one",
+            1_781_699_315_000,
+            None,
+        );
+        let second = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 12:29:10 ] Dionysus Sputnik > Skarovin Vedmak Jumped 5IH-GL",
+            "char-one",
+            1_781_699_350_000,
+            None,
+        );
+        let mut reports = first.into_iter().chain(second).collect::<Vec<_>>();
+
+        dedupe_reports(&mut reports);
+        assert_eq!(reports.len(), 2);
+    }
+
+    #[test]
     fn poll_one_file_reads_only_appended_chatlog_lines() {
         fn utf16_bytes(text: &str) -> Vec<u8> {
             let mut bytes = Vec::new();
@@ -1100,8 +1210,7 @@ mod tests {
         }
 
         let path = std::env::temp_dir().join(format!("evetel-test-{}.txt", Uuid::new_v4()));
-        let first_line =
-            "\u{feff}[ 2026.06.17 12:11:51 ] Ranadaine Oramara > Vert01 KDG-TA\r\n";
+        let first_line = "\u{feff}[ 2026.06.17 12:11:51 ] Ranadaine Oramara > Vert01 KDG-TA\r\n";
         fs::write(&path, utf16_bytes(first_line)).unwrap();
         let state = AppState {
             universe: Universe::load().unwrap(),
