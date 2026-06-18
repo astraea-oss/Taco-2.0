@@ -105,6 +105,7 @@ const icons = {
   compact: svgIcon('<path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M16 21h5v-5"/>', 16),
   expand: svgIcon('<path d="M3 8V3h5"/><path d="M21 8V3h-5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/>', 16),
   pin: svgIcon('<path d="M12 17v5"/><path d="M5 17h14"/><path d="m7 10 5-7 5 7"/><path d="M8 10h8l-1 7H9z"/>', 16),
+  tools: svgIcon('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a6 6 0 0 1-7.9 7.9l-6.6 6.6a2.1 2.1 0 0 1-3-3l6.6-6.6a6 6 0 0 1 7.9-7.9z"/>', 18),
 };
 
 function formatClock(timestampMs: number) {
@@ -292,6 +293,7 @@ function render() {
             <strong>${watchStatus.active_reports}</strong>
           </div>
         </div>
+        <button id="open-tools" class="settings-button tools-button" type="button">${icons.tools}<span>Tools</span></button>
         <button id="open-settings" class="settings-button">${icons.radar}<span>Settings</span></button>
       </aside>
 
@@ -304,9 +306,7 @@ function render() {
           <div class="topbar-actions">
             <div class="status-pill">${mapView ? "Live" : "Loading"}</div>
             <div class="window-controls">
-              <button id="window-minimize" class="window-control" title="Minimize" aria-label="Minimize">-</button>
               <button id="compact-view" class="window-control" title="Compact view" aria-label="Compact view">${icons.compact}</button>
-              <button id="window-close" class="window-control close" title="Close" aria-label="Close">x</button>
             </div>
           </div>
         </div>
@@ -545,16 +545,6 @@ function bindEvents() {
     event.preventDefault();
     currentWindow.startDragging().catch((error) => {
       console.error("Failed to start compact window drag", error);
-    });
-  });
-  document.querySelector<HTMLButtonElement>("#window-minimize")?.addEventListener("click", () => {
-    currentWindow.minimize().catch((error) => {
-      console.error("Failed to minimize window", error);
-    });
-  });
-  document.querySelector<HTMLButtonElement>("#window-close")?.addEventListener("click", () => {
-    currentWindow.close().catch((error) => {
-      console.error("Failed to close window", error);
     });
   });
   document.querySelector<HTMLButtonElement>("#compact-view")?.addEventListener("click", async () => {
