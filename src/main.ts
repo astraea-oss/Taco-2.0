@@ -12,6 +12,7 @@ type Settings = {
   sound_volume: number;
   intel_expiry_minutes: number;
   compact_mode: boolean;
+  always_on_top: boolean;
 };
 
 type WatchedLog = {
@@ -76,6 +77,7 @@ let settings: Settings = {
   sound_volume: 0.5,
   intel_expiry_minutes: 20,
   compact_mode: false,
+  always_on_top: false,
 };
 let mapView: MapView | null = null;
 let watchStatus: WatchStatus = { watched_channels: 0, matched_files: [], active_reports: 0, read_errors: [] };
@@ -102,6 +104,7 @@ const icons = {
   search: svgIcon('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', 16),
   compact: svgIcon('<path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M16 21h5v-5"/>', 16),
   expand: svgIcon('<path d="M3 8V3h5"/><path d="M21 8V3h-5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/>', 16),
+  pin: svgIcon('<path d="M12 17v5"/><path d="M5 17h14"/><path d="m7 10 5-7 5 7"/><path d="M8 10h8l-1 7H9z"/>', 16),
 };
 
 function formatClock(timestampMs: number) {
@@ -250,6 +253,7 @@ function render() {
         <header class="compact-brand" title="Double-click to expand">
           <span class="brand-icon" data-tauri-drag-region>${icons.radar}</span>
           <h1>EVETel</h1>
+          <button id="always-on-top" class="compact-pin ${settings.always_on_top ? "active" : ""}" title="${settings.always_on_top ? "Disable always on top" : "Always on top"}" aria-label="${settings.always_on_top ? "Disable always on top" : "Always on top"}" aria-pressed="${settings.always_on_top}">${icons.pin}</button>
           <button id="full-view" class="compact-exit" title="Full view" aria-label="Full view">${icons.expand}</button>
         </header>
         <div class="compact-map">
@@ -569,6 +573,12 @@ function bindEvents() {
     await saveSettings();
     render();
   });
+  document.querySelector<HTMLButtonElement>("#always-on-top")?.addEventListener("click", async () => {
+    settings.always_on_top = !settings.always_on_top;
+    await currentWindow.setAlwaysOnTop(settings.always_on_top);
+    await saveSettings();
+    render();
+  });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {
     settingsOpen = true;
     render();
@@ -680,6 +690,7 @@ function normalizeSettings(loaded: Settings): Settings {
         channel: "",
       })),
     compact_mode: loaded.compact_mode ?? false,
+    always_on_top: loaded.always_on_top ?? false,
   };
 }
 
@@ -712,6 +723,7 @@ async function refresh() {
 async function boot() {
   try {
     settings = normalizeSettings(await invokeWithTimeout<Settings>("load_settings"));
+    await getCurrentWindow().setAlwaysOnTop(settings.always_on_top);
     allSystems = await invokeWithTimeout<string[]>("list_systems");
     await refresh();
     setInterval(refresh, 1000);

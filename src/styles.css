@@ -68,12 +68,12 @@ button {
   max-height: 100%;
 }
 
+.compact-pin,
 .compact-exit {
   display: grid;
   width: 28px;
   height: 28px;
   place-items: center;
-  margin-left: auto;
   border: 1px solid #31404b;
   border-radius: 5px;
   background: #121a20;
@@ -81,6 +81,18 @@ button {
   opacity: 0.45;
 }
 
+.compact-pin {
+  margin-left: auto;
+}
+
+.compact-pin.active {
+  border-color: #f0b84f;
+  color: #f0b84f;
+  opacity: 1;
+}
+
+.compact-pin:hover,
+.compact-pin:focus-visible,
 .compact-exit:hover,
 .compact-exit:focus-visible {
   border-color: #f0b84f;
