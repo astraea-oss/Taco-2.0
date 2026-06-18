@@ -136,7 +136,7 @@ function escapeRegex(value: string) {
 }
 
 function externalLink(label: string, href: string, className = "intel-link") {
-  return `<a class="${className}" href="${href}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+  return `<a class="${className}" href="${href}" data-external-url="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
 }
 
 function zkillUrl(characterName: string) {
@@ -643,6 +643,18 @@ function bindEvents() {
     await currentWindow.setAlwaysOnTop(settings.always_on_top);
     await saveSettings();
     render();
+  });
+  document.querySelectorAll<HTMLAnchorElement>(".intel-link[data-external-url]").forEach((link) => {
+    link.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const url = link.dataset.externalUrl || link.href;
+      try {
+        await invoke("open_external_url", { url });
+      } catch (error) {
+        console.error("Failed to open external link", error);
+      }
+    });
   });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {
     settingsOpen = true;

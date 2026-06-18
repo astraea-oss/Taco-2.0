@@ -6,6 +6,7 @@ use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager, State};
@@ -296,6 +297,47 @@ fn save_settings_to_disk(app: &AppHandle, settings: &Settings) -> Result<()> {
     let path = settings_path(app)?;
     let json = serde_json::to_string_pretty(settings)?;
     fs::write(path, json)?;
+    Ok(())
+}
+
+fn is_allowed_external_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    let has_allowed_prefix = lower.starts_with("https://zkillboard.com/search/")
+        || lower.starts_with("https://evemaps.dotlan.net/system/")
+        || lower.starts_with("https://evemaps.dotlan.net/map/");
+    has_allowed_prefix
+        && !url
+            .chars()
+            .any(|char| matches!(char, '\r' | '\n' | '\t' | '"' | '&' | '|' | '<' | '>' | '^'))
+}
+
+#[cfg(target_os = "windows")]
+fn open_url_with_os(url: &str) -> Result<()> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    Command::new("rundll32")
+        .args(["url.dll,FileProtocolHandler", url])
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn()
+        .context("failed to launch browser")?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn open_url_with_os(url: &str) -> Result<()> {
+    Command::new("open")
+        .arg(url)
+        .spawn()
+        .context("failed to launch browser")?;
+    Ok(())
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_url_with_os(url: &str) -> Result<()> {
+    Command::new("xdg-open")
+        .arg(url)
+        .spawn()
+        .context("failed to launch browser")?;
     Ok(())
 }
 
@@ -836,6 +878,14 @@ fn save_settings(
 }
 
 #[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    if !is_allowed_external_url(&url) {
+        return Err("URL is not allowed".to_string());
+    }
+    open_url_with_os(&url).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn list_systems(state: State<'_, AppState>) -> Vec<String> {
     state.universe.names.clone()
 }
@@ -1081,6 +1131,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             load_settings,
             save_settings,
+            open_external_url,
             list_systems,
             get_watch_status,
             scan_log_channels,
@@ -1559,6 +1610,25 @@ mod tests {
         assert_eq!(node.active_intel_count, 1);
         assert_eq!(node.hostile_count, 4);
         assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
+    }
+
+    #[test]
+    fn external_url_allowlist_accepts_generated_links() {
+        assert!(is_allowed_external_url(
+            "https://zkillboard.com/search/Hulk%20Harley/"
+        ));
+        assert!(is_allowed_external_url(
+            "https://evemaps.dotlan.net/system/04-EHC"
+        ));
+    }
+
+    #[test]
+    fn external_url_allowlist_rejects_untrusted_or_shell_like_urls() {
+        assert!(!is_allowed_external_url("https://example.com"));
+        assert!(!is_allowed_external_url(
+            "https://zkillboard.com/search/Hulk%20Harley/&calc"
+        ));
+        assert!(!is_allowed_external_url("javascript:alert(1)"));
     }
 
     #[test]
