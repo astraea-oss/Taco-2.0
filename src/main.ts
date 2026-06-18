@@ -11,6 +11,7 @@ type Settings = {
   sound_enabled: boolean;
   sound_volume: number;
   intel_expiry_minutes: number;
+  compact_mode: boolean;
 };
 
 type WatchedLog = {
@@ -74,6 +75,7 @@ let settings: Settings = {
   sound_enabled: true,
   sound_volume: 0.5,
   intel_expiry_minutes: 20,
+  compact_mode: false,
 };
 let mapView: MapView | null = null;
 let watchStatus: WatchStatus = { watched_channels: 0, matched_files: [], active_reports: 0, read_errors: [] };
@@ -98,6 +100,8 @@ const icons = {
   volume: svgIcon('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>', 18),
   refresh: svgIcon('<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>', 18),
   search: svgIcon('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', 16),
+  compact: svgIcon('<path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M16 21h5v-5"/>', 16),
+  expand: svgIcon('<path d="M3 8V3h5"/><path d="M21 8V3h-5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/>', 16),
 };
 
 function formatClock(timestampMs: number) {
@@ -240,6 +244,23 @@ function render() {
     .slice(0, 10);
   const maxDistance = Math.max(1, settings.jump_radius);
 
+  if (settings.compact_mode) {
+    app.innerHTML = `
+      <section class="compact-shell">
+        <header class="compact-brand" title="Double-click to expand">
+          <span class="brand-icon" data-tauri-drag-region>${icons.radar}</span>
+          <h1>EVETel</h1>
+          <button id="full-view" class="compact-exit" title="Full view" aria-label="Full view">${icons.expand}</button>
+        </header>
+        <div class="compact-map">
+          ${renderGraph(maxDistance)}
+        </div>
+      </section>
+    `;
+    bindEvents();
+    return;
+  }
+
   app.innerHTML = `
     <section class="shell">
       <aside class="sidebar">
@@ -280,6 +301,7 @@ function render() {
             <div class="status-pill">${mapView ? "Live" : "Loading"}</div>
             <div class="window-controls">
               <button id="window-minimize" class="window-control" title="Minimize" aria-label="Minimize">-</button>
+              <button id="compact-view" class="window-control" title="Compact view" aria-label="Compact view">${icons.compact}</button>
               <button id="window-close" class="window-control close" title="Close" aria-label="Close">x</button>
             </div>
           </div>
@@ -509,8 +531,16 @@ function bindEvents() {
   document.querySelector<HTMLElement>(".brand-icon")?.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
     event.preventDefault();
+    event.stopPropagation();
     currentWindow.startDragging().catch((error) => {
       console.error("Failed to start window drag", error);
+    });
+  });
+  document.querySelector<HTMLElement>(".compact-brand")?.addEventListener("mousedown", (event) => {
+    if (event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
+    event.preventDefault();
+    currentWindow.startDragging().catch((error) => {
+      console.error("Failed to start compact window drag", error);
     });
   });
   document.querySelector<HTMLButtonElement>("#window-minimize")?.addEventListener("click", () => {
@@ -522,6 +552,22 @@ function bindEvents() {
     currentWindow.close().catch((error) => {
       console.error("Failed to close window", error);
     });
+  });
+  document.querySelector<HTMLButtonElement>("#compact-view")?.addEventListener("click", async () => {
+    settings.compact_mode = true;
+    settingsOpen = false;
+    await saveSettings();
+    render();
+  });
+  document.querySelector<HTMLElement>(".compact-brand")?.addEventListener("dblclick", async () => {
+    settings.compact_mode = false;
+    await saveSettings();
+    render();
+  });
+  document.querySelector<HTMLButtonElement>("#full-view")?.addEventListener("click", async () => {
+    settings.compact_mode = false;
+    await saveSettings();
+    render();
   });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {
     settingsOpen = true;
@@ -633,6 +679,7 @@ function normalizeSettings(loaded: Settings): Settings {
         folder: path,
         channel: "",
       })),
+    compact_mode: loaded.compact_mode ?? false,
   };
 }
 

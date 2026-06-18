@@ -30,6 +30,8 @@ pub struct Settings {
     sound_enabled: bool,
     sound_volume: f32,
     intel_expiry_minutes: u32,
+    #[serde(default)]
+    compact_mode: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +50,7 @@ impl Default for Settings {
             sound_enabled: true,
             sound_volume: 0.5,
             intel_expiry_minutes: 20,
+            compact_mode: false,
         }
     }
 }
@@ -1235,6 +1238,7 @@ mod tests {
             sound_enabled: true,
             sound_volume: 0.5,
             intel_expiry_minutes: 20,
+            compact_mode: false,
         };
         let folder_exists = PathBuf::from(&settings.watched_logs[0].folder).exists();
         let files = watched_files(&settings);

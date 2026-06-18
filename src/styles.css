@@ -34,6 +34,60 @@ button {
   overflow: hidden;
 }
 
+.compact-shell {
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+  overflow: hidden;
+  background: #0d1114;
+}
+
+.compact-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  padding: 8px 10px;
+  border-bottom: 1px solid #263039;
+  background: #12181d;
+  cursor: move;
+  user-select: none;
+}
+
+.compact-map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.compact-map .node-map {
+  width: min(100%, 520px);
+  max-height: 100%;
+}
+
+.compact-exit {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  margin-left: auto;
+  border: 1px solid #31404b;
+  border-radius: 5px;
+  background: #121a20;
+  color: #c8d4dc;
+  opacity: 0.45;
+}
+
+.compact-exit:hover,
+.compact-exit:focus-visible {
+  border-color: #f0b84f;
+  color: #f0b84f;
+  opacity: 1;
+}
+
 .sidebar,
 .intel-panel {
   border-right: 1px solid #263039;
@@ -77,6 +131,10 @@ button {
 }
 
 .brand-icon svg {
+  pointer-events: none;
+}
+
+.window-control svg {
   pointer-events: none;
 }
 
