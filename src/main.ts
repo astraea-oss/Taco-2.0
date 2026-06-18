@@ -244,7 +244,7 @@ function render() {
     <section class="shell">
       <aside class="sidebar">
         <div class="brand">
-          <span class="brand-icon">${icons.radar}</span>
+          <span class="brand-icon" data-tauri-drag-region>${icons.radar}</span>
           <div>
             <h1>EVETel</h1>
           </div>
@@ -499,10 +499,12 @@ function renderGraph(maxDistance: number) {
 }
 
 function bindEvents() {
-  document.querySelector<HTMLElement>(".brand-icon")?.addEventListener("pointerdown", async (event) => {
+  document.querySelector<HTMLElement>(".brand-icon")?.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
     event.preventDefault();
-    await getCurrentWindow().startDragging();
+    getCurrentWindow().startDragging().catch((error) => {
+      console.error("Failed to start window drag", error);
+    });
   });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {
     settingsOpen = true;

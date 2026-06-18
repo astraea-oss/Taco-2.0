@@ -76,6 +76,10 @@ button {
   user-select: none;
 }
 
+.brand-icon svg {
+  pointer-events: none;
+}
+
 h1,
 h2,
 p {
