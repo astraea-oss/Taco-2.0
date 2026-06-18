@@ -1,0 +1,19 @@
+[
+  { "name": "Astero", "aliases": ["astero", "asteros"] },
+  { "name": "Buzzard", "aliases": ["buzzard", "buzzards"] },
+  { "name": "Caracal", "aliases": ["caracal", "caracals"] },
+  { "name": "Cerberus", "aliases": ["cerberus", "cerbs"] },
+  { "name": "Draugur", "aliases": ["draugur", "draugurs"] },
+  { "name": "Griffin", "aliases": ["griffin", "griffins"] },
+  { "name": "Hecate", "aliases": ["hecate", "hecates"] },
+  { "name": "Hulk", "aliases": ["hulk", "hulks"] },
+  { "name": "Kikimora", "aliases": ["kikimora", "kikis"] },
+  { "name": "Legion", "aliases": ["legion", "legions"] },
+  { "name": "Loki", "aliases": ["loki", "lokis"] },
+  { "name": "Proteus", "aliases": ["proteus", "proteuses"] },
+  { "name": "Redeemer", "aliases": ["redeemer", "redeemers"] },
+  { "name": "Sabre", "aliases": ["sabre", "sabres", "saber", "sabers"] },
+  { "name": "Tengu", "aliases": ["tengu", "tengus"] },
+  { "name": "Vedmak", "aliases": ["vedmak", "vedmaks"] },
+  { "name": "Vargur", "aliases": ["vargur", "vargurs"] }
+]

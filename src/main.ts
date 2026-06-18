@@ -147,27 +147,98 @@ function dotlanUrl(systemName: string) {
   return `https://evemaps.dotlan.net/system/${encodeURIComponent(systemName)}`;
 }
 
+const shipWords = new Set([
+  "astero",
+  "asteros",
+  "buzzard",
+  "buzzards",
+  "caracal",
+  "caracals",
+  "cerberus",
+  "cerbs",
+  "draugur",
+  "draugurs",
+  "griffin",
+  "griffins",
+  "hecate",
+  "hecates",
+  "hulk",
+  "hulks",
+  "kikimora",
+  "kikis",
+  "legion",
+  "legions",
+  "loki",
+  "lokis",
+  "proteus",
+  "redeemer",
+  "sabre",
+  "sabres",
+  "saber",
+  "sabers",
+  "tengu",
+  "tengus",
+  "vargur",
+  "vargurs",
+  "vedmak",
+  "vedmaks",
+]);
+
+const pilotBreakWords = new Set([
+  "at",
+  "clear",
+  "clr",
+  "cruiser",
+  "destroyer",
+  "dictor",
+  "fleet",
+  "frigate",
+  "gang",
+  "gate",
+  "gates",
+  "hostile",
+  "hostiles",
+  "in",
+  "neut",
+  "neuts",
+  "neutral",
+  "neutrals",
+  "on",
+  "red",
+  "reds",
+  "ship",
+  "ships",
+  "tackle",
+  "tackled",
+  "wh",
+]);
+
+function normalizeWord(word: string) {
+  return word.toLowerCase().replace(/[^a-z0-9+]/g, "");
+}
+
+function isCountWord(word: string) {
+  const normalized = normalizeWord(word);
+  const count = normalized.startsWith("+") ? normalized.slice(1) : normalized.endsWith("+") ? normalized.slice(0, -1) : "";
+  return Boolean(count) && /^\d+$/.test(count);
+}
+
+function isNameLikeWord(word: string) {
+  return /^[A-Z][A-Za-z0-9'-]*$/.test(word.replace(/[>*]/g, ""));
+}
+
 function likelyPilotPhrase(text: string) {
   const cleaned = text.replace(/[>*]/g, " ").trim();
   if (!cleaned) return "";
-  const stopWords = new Set([
-    "astero",
-    "asteros",
-    "buzzard",
-    "clear",
-    "clr",
-    "gate",
-    "legion",
-    "loki",
-    "sabre",
-    "tengu",
-    "wh",
-  ]);
   const words = cleaned.split(/\s+/).filter(Boolean);
   const picked: string[] = [];
-  for (const word of words) {
-    const normalized = word.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (!normalized || stopWords.has(normalized) || /\d/.test(normalized)) break;
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index];
+    const normalized = normalizeWord(word);
+    const next = words[index + 1];
+    const canBeNamePart =
+      shipWords.has(normalized) && isNameLikeWord(word) && ((picked.length === 0 && next && isNameLikeWord(next)) || picked.length > 0);
+    if (!normalized || isCountWord(word) || pilotBreakWords.has(normalized) || (shipWords.has(normalized) && !canBeNamePart)) break;
     picked.push(word);
     if (picked.length === 2) break;
   }

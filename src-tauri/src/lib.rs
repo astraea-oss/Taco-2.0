@@ -6,17 +6,30 @@ use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager, State};
 
 const UNIVERSE_JSON: &str = include_str!("../resources/universe.json");
+const SHIP_TYPES_JSON: &str = include_str!("../resources/ship_types.json");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SolarSystem {
     id: u32,
     name: String,
     neighbors: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ShipType {
+    name: String,
+    aliases: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct ShipAlias {
+    canonical: String,
+    tokens: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -375,26 +388,22 @@ fn looks_like_system_report(line: &str, systems: &[String]) -> bool {
 }
 
 fn ship_hint(line: &str) -> Option<String> {
-    let lower = line.to_lowercase();
-    let ships = [
-        "asteros", "astero", "buzzard", "sabre", "vedmak", "hecate", "griffin", "loki", "tengu",
-        "legion", "proteus", "redeemer", "bombers", "bomber", "vargur", "marauder", "dictor",
-        "draugur", "kikimora", "caracal", "cerberus",
-    ];
-    ships
-        .iter()
-        .find(|ship| lower.contains(**ship))
-        .map(|ship| ship.to_ascii_uppercase())
+    let tokens = intel_tokens(message_body(line));
+    for index in 0..tokens.len() {
+        if let Some((alias, len)) = ship_alias_at(&tokens, index) {
+            if is_strong_ship_context(&tokens, index, len) {
+                return Some(alias.canonical.to_ascii_uppercase());
+            }
+        }
+    }
+    None
 }
 
 fn explicit_hostile_count(line: &str) -> Option<usize> {
-    message_body(line)
-        .split_whitespace()
+    intel_tokens(message_body(line))
+        .into_iter()
         .filter_map(|raw| {
-            let token = raw.trim_matches(|char: char| !char.is_ascii_alphanumeric() && char != '+');
-            let count = token
-                .strip_prefix('+')
-                .or_else(|| token.strip_suffix('+'))?;
+            let count = raw.strip_prefix('+').or_else(|| raw.strip_suffix('+'))?;
             if count.chars().all(|char| char.is_ascii_digit()) {
                 count.parse::<usize>().ok()
             } else {
@@ -403,6 +412,102 @@ fn explicit_hostile_count(line: &str) -> Option<usize> {
         })
         .filter(|count| *count > 0)
         .max()
+}
+
+fn ship_aliases() -> &'static [ShipAlias] {
+    static SHIP_ALIASES: OnceLock<Vec<ShipAlias>> = OnceLock::new();
+    SHIP_ALIASES.get_or_init(|| {
+        let ship_types = serde_json::from_str::<Vec<ShipType>>(SHIP_TYPES_JSON)
+            .expect("bundled ship type data should be valid");
+        let mut aliases = ship_types
+            .into_iter()
+            .flat_map(|ship| {
+                ship.aliases.into_iter().map(move |alias| ShipAlias {
+                    canonical: ship.name.clone(),
+                    tokens: intel_tokens(&alias),
+                })
+            })
+            .filter(|alias| !alias.tokens.is_empty())
+            .collect::<Vec<_>>();
+        aliases.sort_by_key(|alias| std::cmp::Reverse(alias.tokens.len()));
+        aliases
+    })
+}
+
+fn intel_tokens(text: &str) -> Vec<String> {
+    text.split_whitespace()
+        .map(|token| {
+            token
+                .trim_matches(|char: char| !char.is_ascii_alphanumeric() && char != '+')
+                .to_ascii_lowercase()
+        })
+        .filter(|token| !token.is_empty())
+        .collect()
+}
+
+fn ship_alias_at(tokens: &[String], index: usize) -> Option<(&'static ShipAlias, usize)> {
+    ship_aliases().iter().find_map(|alias| {
+        let len = alias.tokens.len();
+        if index + len <= tokens.len() && tokens[index..index + len] == alias.tokens[..] {
+            Some((alias, len))
+        } else {
+            None
+        }
+    })
+}
+
+fn is_count_token(token: &str) -> bool {
+    let count = token.strip_prefix('+').or_else(|| token.strip_suffix('+'));
+    count
+        .map(|count| !count.is_empty() && count.chars().all(|char| char.is_ascii_digit()))
+        .unwrap_or(false)
+}
+
+fn is_ship_context_before(token: &str) -> bool {
+    matches!(
+        token,
+        "red"
+            | "reds"
+            | "neut"
+            | "neuts"
+            | "neutral"
+            | "neutrals"
+            | "hostile"
+            | "hostiles"
+            | "fleet"
+            | "gang"
+            | "dictor"
+            | "destroyer"
+            | "cruiser"
+            | "frigate"
+            | "bomber"
+            | "bombers"
+            | "tackle"
+            | "tackled"
+            | "ship"
+            | "ships"
+    )
+}
+
+fn is_ship_context_after(token: &str) -> bool {
+    matches!(token, "in" | "on" | "at" | "gate" | "gates" | "wh")
+}
+
+fn is_strong_ship_context(tokens: &[String], index: usize, len: usize) -> bool {
+    let previous = index.checked_sub(1).and_then(|index| tokens.get(index));
+    let next = tokens.get(index + len);
+    let previous_two = index.checked_sub(2).and_then(|index| tokens.get(index));
+    previous.map(|token| is_count_token(token)).unwrap_or(false)
+        || next.map(|token| is_count_token(token)).unwrap_or(false)
+        || previous
+            .map(|token| is_ship_context_before(token))
+            .unwrap_or(false)
+        || previous_two
+            .map(|token| is_ship_context_before(token))
+            .unwrap_or(false)
+        || next
+            .map(|token| is_ship_context_after(token))
+            .unwrap_or(false)
 }
 
 fn report_hostile_count(report: &IntelReport) -> usize {
@@ -1169,7 +1274,51 @@ mod tests {
 
         assert_eq!(report_hostile_count(&prefixed[0]), 4);
         assert_eq!(report_hostile_count(&suffixed[0]), 5);
-        assert_eq!(prefixed[0].ship_hint.as_deref(), Some("ASTEROS"));
+        assert_eq!(prefixed[0].ship_hint.as_deref(), Some("ASTERO"));
+    }
+
+    #[test]
+    fn ship_detection_does_not_treat_ship_word_inside_pilot_name_as_ship() {
+        let universe = Universe::load().unwrap();
+        let hulk_pilot = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Hulk Harley > 04-EHC Hulk Harley +4 Asteros",
+            "test",
+            1,
+            None,
+        );
+        let vedmak_pilot = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 12:28:35 ] Dionysus Sputnik > Skarovin Vedmak Jumped 5IH-GL",
+            "test",
+            2,
+            None,
+        );
+
+        assert_eq!(hulk_pilot[0].ship_hint.as_deref(), Some("ASTERO"));
+        assert_eq!(vedmak_pilot[0].ship_hint, None);
+    }
+
+    #[test]
+    fn ship_detection_uses_context_for_ship_words() {
+        let universe = Universe::load().unwrap();
+        let hulk_ship = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Scout > red Hulk in 04-EHC",
+            "test",
+            1,
+            None,
+        );
+        let vedmak_ship = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Scout > Vedmak on gate 04-EHC",
+            "test",
+            2,
+            None,
+        );
+
+        assert_eq!(hulk_ship[0].ship_hint.as_deref(), Some("HULK"));
+        assert_eq!(vedmak_ship[0].ship_hint.as_deref(), Some("VEDMAK"));
     }
 
     #[test]
@@ -1409,7 +1558,7 @@ mod tests {
             .expect("reported system should be visible");
         assert_eq!(node.active_intel_count, 1);
         assert_eq!(node.hostile_count, 4);
-        assert_eq!(node.ship_summary, vec!["ASTEROS".to_string()]);
+        assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
     }
 
     #[test]
