@@ -45,37 +45,66 @@ const output = regions.map((region) => {
   const regionSystems = [...byId.values()].filter((system) => system.regionId === region.id);
   const override = layoutOverrides[region.name];
   const overrideById = new Map((override?.systems ?? []).map((system) => [system.id, system]));
+  const externalOverrideById = new Map((override?.external_systems ?? []).map((system) => [system.id, system]));
   const minX = Math.min(...regionSystems.map((system) => system.x));
   const maxX = Math.max(...regionSystems.map((system) => system.x));
   const minZ = Math.min(...regionSystems.map((system) => system.z));
   const maxZ = Math.max(...regionSystems.map((system) => system.z));
   const xRange = maxX - minX || 1;
   const zRange = maxZ - minZ || 1;
-  const names = new Set(regionSystems.map((system) => system.name));
-  const idToName = new Map(regionSystems.map((system) => [system.id, system.name]));
+  const externalSystemsById = new Map();
   const edgeKeys = new Set();
 
   for (const jump of jumps) {
-    const from = idToName.get(Number(jump.fromSolarSystemID));
-    const to = idToName.get(Number(jump.toSolarSystemID));
-    if (!from || !to || !names.has(from) || !names.has(to)) continue;
-    edgeKeys.add([from, to].sort().join("|"));
+    const fromId = Number(jump.fromSolarSystemID);
+    const toId = Number(jump.toSolarSystemID);
+    const fromSystem = byId.get(fromId);
+    const toSystem = byId.get(toId);
+    if (!fromSystem || !toSystem) continue;
+
+    const fromInside = fromSystem.regionId === region.id;
+    const toInside = toSystem.regionId === region.id;
+    if (fromInside && toInside) {
+      edgeKeys.add([fromSystem.name, toSystem.name].sort().join("|"));
+    } else if (fromInside || toInside) {
+      const externalSystem = fromInside ? toSystem : fromSystem;
+      externalSystemsById.set(externalSystem.id, externalSystem);
+      edgeKeys.add([fromSystem.name, toSystem.name].sort().join("|"));
+    }
   }
+
+  const internalOutputSystems = regionSystems.map((system) => ({
+    id: system.id,
+    name: system.name,
+    x: overrideById.get(system.id)?.x ?? Math.round(60 + ((system.x - minX) / xRange) * 880),
+    y: overrideById.get(system.id)?.y ?? Math.round(50 + ((maxZ - system.z) / zRange) * 620),
+    security: Number(system.security.toFixed(3)),
+    external: false,
+    external_region: null,
+  }));
+
+  const externalOutputSystems = [...externalSystemsById.values()].map((system) => {
+    const externalOverride = externalOverrideById.get(system.id);
+    return {
+      id: system.id,
+      name: system.name,
+      x: externalOverride?.x ?? Math.round(60 + ((system.x - minX) / xRange) * 880),
+      y: externalOverride?.y ?? Math.round(50 + ((maxZ - system.z) / zRange) * 620),
+      security: Number(system.security.toFixed(3)),
+      external: true,
+      external_region: externalOverride?.external_region ?? "External",
+    };
+  });
 
   return {
     id: region.id,
     name: region.name,
     width: override?.width ?? 1000,
     height: override?.height ?? 720,
-    systems: regionSystems
-      .map((system) => ({
-        id: system.id,
-        name: system.name,
-        x: overrideById.get(system.id)?.x ?? Math.round(60 + ((system.x - minX) / xRange) * 880),
-        y: overrideById.get(system.id)?.y ?? Math.round(50 + ((maxZ - system.z) / zRange) * 620),
-        security: Number(system.security.toFixed(3)),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    systems: [...internalOutputSystems, ...externalOutputSystems].sort((a, b) => {
+      if (a.external !== b.external) return Number(a.external) - Number(b.external);
+      return a.name.localeCompare(b.name);
+    }),
     edges: [...edgeKeys]
       .map((key) => {
         const [from, to] = key.split("|");

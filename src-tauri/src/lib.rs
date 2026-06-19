@@ -51,6 +51,10 @@ pub struct RegionSystem {
     x: f32,
     y: f32,
     security: f32,
+    #[serde(default)]
+    external: bool,
+    #[serde(default)]
+    external_region: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -140,6 +144,8 @@ pub struct RegionNode {
     x: f32,
     y: f32,
     security: f32,
+    external: bool,
+    external_region: Option<String>,
     active_intel_count: usize,
     hostile_count: usize,
     ship_summary: Vec<String>,
@@ -1214,6 +1220,8 @@ fn build_region_view(
                 x: system.x,
                 y: system.y,
                 security: system.security,
+                external: system.external,
+                external_region: system.external_region.clone(),
                 active_intel_count: system_reports.len(),
                 hostile_count,
                 ship_summary,
@@ -1770,6 +1778,24 @@ mod tests {
         assert!(node.is_current);
         assert_eq!(node.hostile_count, 4);
         assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
+    }
+
+    #[test]
+    fn region_view_includes_direct_external_region_jumps() {
+        let regions = RegionLayout::load_all().unwrap();
+        let view = build_region_view(&regions, "04-EHC".to_string(), Vec::new());
+        let external_node = view
+            .nodes
+            .iter()
+            .find(|node| node.name == "IVP-KA")
+            .expect("direct Cache exit should be present in Insmother");
+
+        assert!(external_node.external);
+        assert_eq!(external_node.external_region.as_deref(), Some("Cache"));
+        assert!(view
+            .edges
+            .iter()
+            .any(|edge| edge.from == "5-2PQU" && edge.to == "IVP-KA"));
     }
 
     #[test]

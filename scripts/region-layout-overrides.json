@@ -664,6 +664,127 @@
         "x": 138,
         "y": 350
       }
+    ],
+    "external_systems": [
+      {
+        "id": 30000543,
+        "name": "0TYR-T",
+        "x": 498,
+        "y": 240,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30000445,
+        "name": "1KAW-T",
+        "x": 33,
+        "y": 635,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000720,
+        "name": "1QZ-Y9",
+        "x": 438,
+        "y": 155,
+        "external_region": "Scalding Pass"
+      },
+      {
+        "id": 30000680,
+        "name": "1V-LI2",
+        "x": 293,
+        "y": 655,
+        "external_region": "Scalding Pass"
+      },
+      {
+        "id": 30000706,
+        "name": "6-EQYE",
+        "x": 88,
+        "y": 50,
+        "external_region": "Scalding Pass"
+      },
+      {
+        "id": 30000542,
+        "name": "8-OZU1",
+        "x": 413,
+        "y": 215,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30000648,
+        "name": "8-VC6H",
+        "x": 998,
+        "y": 495,
+        "external_region": "Cache"
+      },
+      {
+        "id": 30000494,
+        "name": "8FN-GP",
+        "x": 383,
+        "y": 755,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000458,
+        "name": "9N-0HF",
+        "x": 378,
+        "y": 455,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000619,
+        "name": "BLMX-B",
+        "x": 918,
+        "y": 495,
+        "external_region": "Cache"
+      },
+      {
+        "id": 30002301,
+        "name": "G-QTSD",
+        "x": 28,
+        "y": 85,
+        "external_region": "Etherium Reach"
+      },
+      {
+        "id": 30000552,
+        "name": "GPLB-C",
+        "x": 413,
+        "y": 110,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30000622,
+        "name": "IVP-KA",
+        "x": 808,
+        "y": 250,
+        "external_region": "Cache"
+      },
+      {
+        "id": 30000540,
+        "name": "L-FM3P",
+        "x": 413,
+        "y": 255,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30001563,
+        "name": "RXA-W1",
+        "x": 998,
+        "y": 15,
+        "external_region": "The Spire"
+      },
+      {
+        "id": 30000527,
+        "name": "U69-YC",
+        "x": 33,
+        "y": 755,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000713,
+        "name": "X2-ZA5",
+        "x": 103,
+        "y": 615,
+        "external_region": "Scalding Pass"
+      }
     ]
   }
 }

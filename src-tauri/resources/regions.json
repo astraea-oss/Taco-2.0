@@ -10,773 +10,1150 @@
         "name": "0-6VZ5",
         "x": 33,
         "y": 675,
-        "security": -0.499
+        "security": -0.499,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000799,
         "name": "0-VG7A",
         "x": 374,
         "y": 402,
-        "security": -0.43
+        "security": -0.43,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000822,
         "name": "04-EHC",
         "x": 743,
         "y": 650,
-        "security": -0.56
+        "security": -0.56,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000781,
         "name": "0UBC-R",
         "x": 263,
         "y": 580,
-        "security": -0.214
+        "security": -0.214,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000766,
         "name": "1TG7-W",
         "x": 933,
         "y": 145,
-        "security": -0.059
+        "security": -0.059,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000836,
         "name": "1ZF-PJ",
         "x": 563,
         "y": 15,
-        "security": -0.862
+        "security": -0.862,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000756,
         "name": "2-Q4YG",
         "x": 733,
         "y": 300,
-        "security": -0.11
+        "security": -0.11,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000832,
         "name": "27-HP0",
         "x": 863,
         "y": 15,
-        "security": -0.641
+        "security": -0.641,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000757,
         "name": "2JT-3Q",
         "x": 653,
         "y": 290,
-        "security": -0.102
+        "security": -0.102,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000823,
         "name": "3-0FYP",
         "x": 998,
         "y": 540,
-        "security": -0.492
+        "security": -0.492,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000829,
         "name": "38NZ-1",
         "x": 578,
         "y": 715,
-        "security": -0.535
+        "security": -0.535,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000798,
         "name": "3AE-CP",
         "x": 433,
         "y": 385,
-        "security": -0.674
+        "security": -0.674,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000782,
         "name": "3U-48K",
         "x": 323,
         "y": 555,
-        "security": -0.214
+        "security": -0.214,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000795,
         "name": "4CJ-AC",
         "x": 123,
         "y": 525,
-        "security": -0.205
+        "security": -0.205,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000749,
         "name": "4DS-OI",
         "x": 768,
         "y": 425,
-        "security": -0.201
+        "security": -0.201,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000818,
         "name": "4LB-EL",
         "x": 818,
         "y": 520,
-        "security": -0.388
+        "security": -0.388,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000776,
         "name": "4M-QXK",
         "x": 248,
         "y": 195,
-        "security": -0.149
+        "security": -0.149,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000762,
         "name": "5-2PQU",
         "x": 733,
         "y": 225,
-        "security": -0.081
+        "security": -0.081,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000844,
         "name": "5C-RPA",
         "x": 383,
         "y": 715,
-        "security": -0.498
+        "security": -0.498,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000820,
         "name": "5IH-GL",
         "x": 768,
         "y": 600,
-        "security": -0.509
+        "security": -0.509,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000741,
         "name": "5M2-KP",
         "x": 673,
         "y": 65,
-        "security": -0.4
+        "security": -0.4,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000791,
         "name": "67Y-NR",
         "x": 198,
         "y": 565,
-        "security": -0.256
+        "security": -0.256,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000764,
         "name": "6BJH-3",
         "x": 788,
         "y": 145,
-        "security": -0.055
+        "security": -0.055,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000759,
         "name": "7-JT09",
         "x": 658,
         "y": 235,
-        "security": -0.089
+        "security": -0.089,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000787,
         "name": "74-VZA",
         "x": 88,
         "y": 125,
-        "security": -0.723
+        "security": -0.723,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000827,
         "name": "74L2-U",
         "x": 613,
         "y": 635,
-        "security": -0.53
+        "security": -0.53,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000773,
         "name": "78-0R6",
         "x": 313,
         "y": 240,
-        "security": -0.257
+        "security": -0.257,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000840,
         "name": "7EX-14",
         "x": 103,
         "y": 715,
-        "security": -0.557
+        "security": -0.557,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000745,
         "name": "7L3-JS",
         "x": 828,
         "y": 405,
-        "security": -0.12
+        "security": -0.12,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000775,
         "name": "8-WYQZ",
         "x": 158,
         "y": 275,
-        "security": -0.23
+        "security": -0.23,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000770,
         "name": "88A-RA",
         "x": 268,
         "y": 310,
-        "security": -0.286
+        "security": -0.286,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000748,
         "name": "8EF-58",
         "x": 698,
         "y": 495,
-        "security": -0.28
+        "security": -0.28,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000771,
         "name": "8G-2FP",
         "x": 98,
         "y": 270,
-        "security": -0.211
+        "security": -0.211,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000800,
         "name": "9OLQ-6",
         "x": 433,
         "y": 345,
-        "security": -0.786
+        "security": -0.786,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000769,
         "name": "A-TJ0G",
         "x": 988,
         "y": 225,
-        "security": -0.085
+        "security": -0.085,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000794,
         "name": "A24L-V",
         "x": 38,
         "y": 440,
-        "security": -0.478
+        "security": -0.478,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000760,
         "name": "AGCP-I",
         "x": 663,
         "y": 195,
-        "security": -0.14
+        "security": -0.14,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000817,
         "name": "B-II34",
         "x": 978,
         "y": 420,
-        "security": -0.086
+        "security": -0.086,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000772,
         "name": "C-J6MT",
         "x": 238,
         "y": 245,
-        "security": -0.289
+        "security": -0.289,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000821,
         "name": "C1G-XC",
         "x": 918,
         "y": 540,
-        "security": -0.564
+        "security": -0.564,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000743,
         "name": "C8H5-X",
         "x": 753,
         "y": 370,
-        "security": -0.149
+        "security": -0.149,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000845,
         "name": "CR2-PQ",
         "x": 458,
         "y": 715,
-        "security": -0.499
+        "security": -0.499,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000826,
         "name": "D-P1EH",
         "x": 613,
         "y": 595,
-        "security": -0.538
+        "security": -0.538,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000816,
         "name": "DFH-V5",
         "x": 863,
         "y": 475,
-        "security": -0.323
+        "security": -0.323,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000783,
         "name": "EFM-C4",
         "x": 28,
         "y": 160,
-        "security": -0.482
+        "security": -0.482,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000814,
         "name": "EJ48-O",
         "x": 928,
         "y": 370,
-        "security": -0.103
+        "security": -0.103,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000740,
         "name": "EKPB-3",
         "x": 753,
         "y": 95,
-        "security": -0.355
+        "security": -0.355,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000796,
         "name": "EUU-4N",
         "x": 494,
         "y": 413,
-        "security": -0.681
+        "security": -0.681,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000804,
         "name": "F2A-GX",
         "x": 143,
         "y": 390,
-        "security": -0.261
+        "security": -0.261,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000810,
         "name": "F3-8X2",
         "x": 213,
         "y": 60,
-        "security": -0.542
+        "security": -0.542,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000754,
         "name": "F39H-1",
         "x": 573,
         "y": 435,
-        "security": -0.17
+        "security": -0.17,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000809,
         "name": "FN0-QS",
         "x": 343,
         "y": 70,
-        "security": -0.849
+        "security": -0.849,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000835,
         "name": "FX4L-2",
         "x": 648,
         "y": 15,
-        "security": -0.756
+        "security": -0.756,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000778,
         "name": "G-EURJ",
         "x": 433,
         "y": 520,
-        "security": -0.286
+        "security": -0.286,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000839,
         "name": "GB-6X5",
         "x": 33,
         "y": 715,
-        "security": -0.525
+        "security": -0.525,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000792,
         "name": "GDHN-K",
         "x": 198,
         "y": 635,
-        "security": -0.367
+        "security": -0.367,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000789,
         "name": "GK5Z-T",
         "x": 58,
         "y": 560,
-        "security": -0.528
+        "security": -0.528,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000837,
         "name": "HFC-AQ",
         "x": 493,
         "y": 15,
-        "security": -0.929
+        "security": -0.929,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000828,
         "name": "HL-VZX",
         "x": 613,
         "y": 675,
-        "security": -0.496
+        "security": -0.496,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000825,
         "name": "HZ-O18",
         "x": 613,
         "y": 555,
-        "security": -0.42
+        "security": -0.42,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000788,
         "name": "I-1QKL",
         "x": 88,
         "y": 175,
-        "security": -0.577
+        "security": -0.577,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000758,
         "name": "I3CR-F",
         "x": 583,
         "y": 310,
-        "security": -0.16
+        "security": -0.16,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000843,
         "name": "J-ZYSZ",
         "x": 313,
         "y": 715,
-        "security": -0.513
+        "security": -0.513,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000737,
         "name": "KD-KPR",
         "x": 593,
         "y": 65,
-        "security": -0.416
+        "security": -0.416,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000736,
         "name": "KDG-TA",
         "x": 683,
         "y": 150,
-        "security": -0.179
+        "security": -0.179,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000807,
         "name": "KS-1TS",
         "x": 168,
         "y": 475,
-        "security": -0.447
+        "security": -0.447,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000786,
         "name": "L5-UWT",
         "x": 28,
         "y": 250,
-        "security": -0.651
+        "security": -0.651,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000813,
         "name": "LVL-GZ",
         "x": 398,
         "y": 35,
-        "security": -0.96
+        "security": -0.96,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000761,
         "name": "M4-GJ6",
         "x": 548,
         "y": 365,
-        "security": -0.157
+        "security": -0.157,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000803,
         "name": "MJ-LGH",
         "x": 133,
         "y": 310,
-        "security": -0.259
+        "security": -0.259,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000801,
         "name": "MOCW-2",
         "x": 433,
         "y": 305,
-        "security": -0.817
+        "security": -0.817,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000774,
         "name": "MSG-BZ",
         "x": 358,
         "y": 155,
-        "security": -0.276
+        "security": -0.276,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000824,
         "name": "N-O53U",
         "x": 613,
         "y": 520,
-        "security": -0.426
+        "security": -0.426,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000811,
         "name": "N7-BIY",
         "x": 278,
         "y": 100,
-        "security": -0.646
+        "security": -0.646,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000841,
         "name": "N7-KGJ",
         "x": 173,
         "y": 715,
-        "security": -0.594
+        "security": -0.594,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000744,
         "name": "O-7LAI",
         "x": 828,
         "y": 345,
-        "security": -0.082
+        "security": -0.082,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000831,
         "name": "O-9G5Y",
         "x": 793,
         "y": 30,
-        "security": -0.521
+        "security": -0.521,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000738,
         "name": "PT-21C",
         "x": 853,
         "y": 80,
-        "security": -0.177
+        "security": -0.177,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000797,
         "name": "Q-3HS5",
         "x": 433,
         "y": 425,
-        "security": -0.579
+        "security": -0.579,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000785,
         "name": "Q7-FZ8",
         "x": 168,
         "y": 125,
-        "security": -0.546
+        "security": -0.546,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000793,
         "name": "QTME-D",
         "x": 43,
         "y": 495,
-        "security": -0.453
+        "security": -0.453,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000767,
         "name": "QYD-WK",
         "x": 838,
         "y": 195,
-        "security": -0.045
+        "security": -0.045,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000768,
         "name": "R959-U",
         "x": 868,
         "y": 125,
-        "security": -0.061
+        "security": -0.061,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000805,
         "name": "RD-FWY",
         "x": 83,
         "y": 390,
-        "security": -0.185
+        "security": -0.185,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000780,
         "name": "RERZ-L",
         "x": 308,
         "y": 445,
-        "security": -0.22
+        "security": -0.22,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000815,
         "name": "ROJ-B0",
         "x": 908,
         "y": 425,
-        "security": -0.191
+        "security": -0.191,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000790,
         "name": "RQN-OO",
         "x": 153,
         "y": 590,
-        "security": -0.391
+        "security": -0.391,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000834,
         "name": "RZ-TI6",
         "x": 723,
         "y": 15,
-        "security": -0.766
+        "security": -0.766,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000753,
         "name": "S0U-MO",
         "x": 628,
         "y": 455,
-        "security": -0.255
+        "security": -0.255,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000779,
         "name": "SHBF-V",
         "x": 358,
         "y": 495,
-        "security": -0.292
+        "security": -0.292,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000763,
         "name": "SN9-3Z",
         "x": 528,
         "y": 280,
-        "security": -0.144
+        "security": -0.144,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000742,
         "name": "TK-DLH",
         "x": 783,
         "y": 65,
-        "security": -0.309
+        "security": -0.309,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000812,
         "name": "TTP-2B",
         "x": 333,
         "y": 25,
-        "security": -0.933
+        "security": -0.933,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000747,
         "name": "TZN-2V",
         "x": 698,
         "y": 445,
-        "security": -0.153
+        "security": -0.153,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000765,
         "name": "U-UTU9",
         "x": 923,
         "y": 185,
-        "security": -0.042
+        "security": -0.042,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000819,
         "name": "UDE-FX",
         "x": 793,
         "y": 560,
-        "security": -0.411
+        "security": -0.411,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000755,
         "name": "V-QXXK",
         "x": 643,
         "y": 420,
-        "security": -0.232
+        "security": -0.232,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000806,
         "name": "VBPT-T",
         "x": 153,
         "y": 435,
-        "security": -0.318
+        "security": -0.318,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000842,
         "name": "VD-8QY",
         "x": 243,
         "y": 715,
-        "security": -0.561
+        "security": -0.561,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000751,
         "name": "W-6GBI",
         "x": 658,
         "y": 385,
-        "security": -0.198
+        "security": -0.198,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000830,
         "name": "W-MF6J",
         "x": 658,
         "y": 715,
-        "security": -0.514
+        "security": -0.514,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000746,
         "name": "WF4C-8",
         "x": 778,
         "y": 480,
-        "security": -0.171
+        "security": -0.171,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000808,
         "name": "X0-6LH",
         "x": 278,
         "y": 55,
-        "security": -0.714
+        "security": -0.714,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000833,
         "name": "X1-IZ0",
         "x": 933,
         "y": 15,
-        "security": -0.59
+        "security": -0.59,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000777,
         "name": "X5-0EM",
         "x": 508,
         "y": 560,
-        "security": -0.25
+        "security": -0.25,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000752,
         "name": "XKH-6O",
         "x": 588,
         "y": 395,
-        "security": -0.145
+        "security": -0.145,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000750,
         "name": "XQP-9C",
         "x": 673,
         "y": 350,
-        "security": -0.155
+        "security": -0.155,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000784,
         "name": "YPW-M4",
         "x": 168,
         "y": 170,
-        "security": -0.542
+        "security": -0.542,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000739,
         "name": "Z182-R",
         "x": 713,
         "y": 120,
-        "security": -0.216
+        "security": -0.216,
+        "external": false,
+        "external_region": null
       },
       {
         "id": 30000802,
         "name": "ZO-4AR",
         "x": 138,
         "y": 350,
-        "security": -0.294
+        "security": -0.294,
+        "external": false,
+        "external_region": null
+      },
+      {
+        "id": 30000543,
+        "name": "0TYR-T",
+        "x": 498,
+        "y": 240,
+        "security": -0.156,
+        "external": true,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30000445,
+        "name": "1KAW-T",
+        "x": 33,
+        "y": 635,
+        "security": -0.402,
+        "external": true,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000720,
+        "name": "1QZ-Y9",
+        "x": 438,
+        "y": 155,
+        "security": -0.438,
+        "external": true,
+        "external_region": "Scalding Pass"
+      },
+      {
+        "id": 30000680,
+        "name": "1V-LI2",
+        "x": 293,
+        "y": 655,
+        "security": -0.429,
+        "external": true,
+        "external_region": "Scalding Pass"
+      },
+      {
+        "id": 30000706,
+        "name": "6-EQYE",
+        "x": 88,
+        "y": 50,
+        "security": -0.405,
+        "external": true,
+        "external_region": "Scalding Pass"
+      },
+      {
+        "id": 30000542,
+        "name": "8-OZU1",
+        "x": 413,
+        "y": 215,
+        "security": -0.18,
+        "external": true,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30000648,
+        "name": "8-VC6H",
+        "x": 998,
+        "y": 495,
+        "security": -1,
+        "external": true,
+        "external_region": "Cache"
+      },
+      {
+        "id": 30000494,
+        "name": "8FN-GP",
+        "x": 383,
+        "y": 755,
+        "security": -0.512,
+        "external": true,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000458,
+        "name": "9N-0HF",
+        "x": 378,
+        "y": 455,
+        "security": -0.262,
+        "external": true,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000619,
+        "name": "BLMX-B",
+        "x": 918,
+        "y": 495,
+        "security": -0.032,
+        "external": true,
+        "external_region": "Cache"
+      },
+      {
+        "id": 30002301,
+        "name": "G-QTSD",
+        "x": 28,
+        "y": 85,
+        "security": -0.155,
+        "external": true,
+        "external_region": "Etherium Reach"
+      },
+      {
+        "id": 30000552,
+        "name": "GPLB-C",
+        "x": 413,
+        "y": 110,
+        "security": -0.255,
+        "external": true,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30000622,
+        "name": "IVP-KA",
+        "x": 808,
+        "y": 250,
+        "security": -0.063,
+        "external": true,
+        "external_region": "Cache"
+      },
+      {
+        "id": 30000540,
+        "name": "L-FM3P",
+        "x": 413,
+        "y": 255,
+        "security": -0.171,
+        "external": true,
+        "external_region": "Wicked Creek"
+      },
+      {
+        "id": 30001563,
+        "name": "RXA-W1",
+        "x": 998,
+        "y": 15,
+        "security": -0.338,
+        "external": true,
+        "external_region": "The Spire"
+      },
+      {
+        "id": 30000527,
+        "name": "U69-YC",
+        "x": 33,
+        "y": 755,
+        "security": -0.516,
+        "external": true,
+        "external_region": "Detorid"
+      },
+      {
+        "id": 30000713,
+        "name": "X2-ZA5",
+        "x": 103,
+        "y": 615,
+        "security": -0.901,
+        "external": true,
+        "external_region": "Scalding Pass"
       }
     ],
     "edges": [
+      {
+        "from": "0-6VZ5",
+        "to": "1KAW-T"
+      },
       {
         "from": "0-6VZ5",
         "to": "GB-6X5"
@@ -794,12 +1171,20 @@
         "to": "W-MF6J"
       },
       {
+        "from": "0TYR-T",
+        "to": "SN9-3Z"
+      },
+      {
         "from": "0UBC-R",
         "to": "3U-48K"
       },
       {
         "from": "0UBC-R",
         "to": "67Y-NR"
+      },
+      {
+        "from": "1QZ-Y9",
+        "to": "MSG-BZ"
       },
       {
         "from": "1TG7-W",
@@ -816,6 +1201,10 @@
       {
         "from": "1TG7-W",
         "to": "U-UTU9"
+      },
+      {
+        "from": "1V-LI2",
+        "to": "GDHN-K"
       },
       {
         "from": "1ZF-PJ",
@@ -860,6 +1249,10 @@
       {
         "from": "2JT-3Q",
         "to": "I3CR-F"
+      },
+      {
+        "from": "3-0FYP",
+        "to": "8-VC6H"
       },
       {
         "from": "3-0FYP",
@@ -938,6 +1331,14 @@
         "to": "7-JT09"
       },
       {
+        "from": "5-2PQU",
+        "to": "IVP-KA"
+      },
+      {
+        "from": "5C-RPA",
+        "to": "8FN-GP"
+      },
+      {
         "from": "5C-RPA",
         "to": "CR2-PQ"
       },
@@ -960,6 +1361,10 @@
       {
         "from": "5M2-KP",
         "to": "KD-KPR"
+      },
+      {
+        "from": "6-EQYE",
+        "to": "74-VZA"
       },
       {
         "from": "67Y-NR",
@@ -999,11 +1404,19 @@
       },
       {
         "from": "78-0R6",
+        "to": "8-OZU1"
+      },
+      {
+        "from": "78-0R6",
         "to": "88A-RA"
       },
       {
         "from": "78-0R6",
         "to": "C-J6MT"
+      },
+      {
+        "from": "78-0R6",
+        "to": "L-FM3P"
       },
       {
         "from": "78-0R6",
@@ -1054,6 +1467,10 @@
         "to": "TZN-2V"
       },
       {
+        "from": "9N-0HF",
+        "to": "SHBF-V"
+      },
+      {
         "from": "9OLQ-6",
         "to": "MOCW-2"
       },
@@ -1082,6 +1499,10 @@
         "to": "ROJ-B0"
       },
       {
+        "from": "BLMX-B",
+        "to": "C1G-XC"
+      },
+      {
         "from": "C-J6MT",
         "to": "YPW-M4"
       },
@@ -1096,6 +1517,10 @@
       {
         "from": "DFH-V5",
         "to": "ROJ-B0"
+      },
+      {
+        "from": "EFM-C4",
+        "to": "G-QTSD"
       },
       {
         "from": "EFM-C4",
@@ -1170,6 +1595,10 @@
         "to": "X5-0EM"
       },
       {
+        "from": "GB-6X5",
+        "to": "U69-YC"
+      },
+      {
         "from": "GDHN-K",
         "to": "RQN-OO"
       },
@@ -1180,6 +1609,14 @@
       {
         "from": "GK5Z-T",
         "to": "RQN-OO"
+      },
+      {
+        "from": "GK5Z-T",
+        "to": "X2-ZA5"
+      },
+      {
+        "from": "GPLB-C",
+        "to": "MSG-BZ"
       },
       {
         "from": "HFC-AQ",
@@ -1280,6 +1717,10 @@
       {
         "from": "RERZ-L",
         "to": "SHBF-V"
+      },
+      {
+        "from": "RXA-W1",
+        "to": "X1-IZ0"
       },
       {
         "from": "S0U-MO",

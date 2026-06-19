@@ -555,6 +555,12 @@ select:focus {
   stroke: #f0b84f;
 }
 
+.region-node.external rect {
+  fill: #0a0d0f;
+  stroke: #6f7880;
+  stroke-width: 1.5;
+}
+
 .region-node text {
   text-anchor: middle;
   font-weight: 800;
@@ -571,7 +577,8 @@ select:focus {
 
 .region-node.current .system,
 .region-node.danger .system,
-.region-node.watch .system {
+.region-node.watch .system,
+.region-node.external .system {
   fill: #e7edf2;
   stroke-width: 3px;
 }
@@ -580,6 +587,11 @@ select:focus {
   fill: #d01828;
   font-size: 8px;
   stroke-width: 0;
+}
+
+.region-node.external .security {
+  fill: #9aa7b0;
+  font-size: 6.5px;
 }
 
 .region-node .count {

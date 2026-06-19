@@ -44,6 +44,8 @@ type RegionNode = {
   x: number;
   y: number;
   security: number;
+  external: boolean;
+  external_region?: string | null;
   active_intel_count: number;
   hostile_count: number;
   ship_summary: string[];
@@ -658,14 +660,18 @@ function renderRegionGraph() {
           .map((node) => {
             const dangerClass = node.severity === "danger" ? "danger" : node.severity === "watch" ? "watch" : "";
             const currentClass = node.is_current ? "current" : "";
+            const externalClass = node.external ? "external" : "";
             const ships = node.ship_summary.length ? node.ship_summary.join(", ") : "Unknown";
-            const tooltip = `${node.name} · ${node.security.toFixed(1)} · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`;
+            const regionLabel = node.external_region ?? "External";
+            const tooltip = node.external
+              ? `${node.name} · ${regionLabel} · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`
+              : `${node.name} · ${node.security.toFixed(1)} · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`;
             return `
-              <g class="region-node ${dangerClass} ${currentClass}" transform="translate(${node.x}, ${node.y})">
+              <g class="region-node ${dangerClass} ${currentClass} ${externalClass}" transform="translate(${node.x}, ${node.y})">
                 <title>${escapeHtml(tooltip)}</title>
-                <rect x="-30" y="-15" width="60" height="30" rx="12" />
+                <rect x="${node.external ? -25 : -30}" y="-15" width="${node.external ? 50 : 60}" height="30" rx="${node.external ? 1 : 12}" />
                 <text class="system" y="-2">${node.name}</text>
-                <text class="security" y="10">${node.security.toFixed(1)}</text>
+                <text class="security" y="10">${node.external ? escapeHtml(regionLabel) : node.security.toFixed(1)}</text>
                 ${node.hostile_count ? `<text class="count" x="33" y="-16">${node.hostile_count}</text>` : ""}
               </g>
             `;

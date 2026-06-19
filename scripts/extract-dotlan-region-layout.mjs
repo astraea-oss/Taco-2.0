@@ -9,28 +9,50 @@ const outputPath = process.argv[3]
   : join(root, "scripts", "region-layout-overrides.json");
 
 const svg = readFileSync(svgPath, "utf8");
-const namesById = new Map();
+const symbolsById = new Map();
 
-for (const match of svg.matchAll(
-  /<symbol id="def(\d+)">[\s\S]*?<text x="28" y="14" class="ss" text-anchor="middle">([^<]+)<\/text>/g,
-)) {
-  namesById.set(Number(match[1]), match[2]);
+for (const match of svg.matchAll(/<symbol id="def(\d+)">([\s\S]*?)<\/symbol>/g)) {
+  const id = Number(match[1]);
+  const body = match[2];
+  const internalName = body.match(/<text x="28" y="14" class="ss" text-anchor="middle">([^<]+)<\/text>/)?.[1];
+  const externalName = body.match(/<text x="28" y="14" class="es" text-anchor="middle">([^<]+)<\/text>/)?.[1];
+  const externalRegion = body.match(/<text x="28" y="21\.7" class="er" text-anchor="middle">([^<]+)<\/text>/)?.[1];
+  if (internalName) {
+    symbolsById.set(id, { id, name: internalName, external: false });
+  } else if (externalName) {
+    symbolsById.set(id, {
+      id,
+      name: externalName,
+      external: true,
+      external_region: externalRegion ?? "External",
+    });
+  }
 }
 
 const systems = [];
+const externalSystems = [];
 for (const match of svg.matchAll(/<use id="sys(\d+)" x="([\d.]+)" y="([\d.]+)"[^>]*>/g)) {
   const id = Number(match[1]);
-  const name = namesById.get(id);
-  if (!name) continue;
-  systems.push({
+  const symbol = symbolsById.get(id);
+  if (!symbol) continue;
+  const system = {
     id,
-    name,
+    name: symbol.name,
     x: Math.round(Number(match[2]) + 28),
     y: Math.round(Number(match[3]) + 14.5),
-  });
+  };
+  if (symbol.external) {
+    externalSystems.push({
+      ...system,
+      external_region: symbol.external_region,
+    });
+  } else {
+    systems.push(system);
+  }
 }
 
 systems.sort((a, b) => a.name.localeCompare(b.name));
+externalSystems.sort((a, b) => a.name.localeCompare(b.name));
 
 writeFileSync(
   outputPath,
@@ -41,6 +63,7 @@ writeFileSync(
         width: 1024,
         height: 768,
         systems,
+        external_systems: externalSystems,
       },
     },
     null,
@@ -48,4 +71,6 @@ writeFileSync(
   )}\n`,
 );
 
-console.log(`Wrote ${systems.length} Dotlan system positions to ${outputPath}`);
+console.log(
+  `Wrote ${systems.length} Dotlan system positions and ${externalSystems.length} external positions to ${outputPath}`,
+);
