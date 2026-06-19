@@ -1149,10 +1149,16 @@ fn poll_logs(state: State<'_, AppState>) -> Result<Vec<IntelReport>, String> {
 
 fn active_reports_after_clears(all_reports: &[IntelReport]) -> Vec<IntelReport> {
     let mut latest_clear_by_system: HashMap<String, u128> = HashMap::new();
+    let mut latest_report_by_pilot: HashMap<String, u128> = HashMap::new();
     for report in all_reports {
         if report.severity == IntelSeverity::Clear {
             latest_clear_by_system
                 .entry(report.system.clone())
+                .and_modify(|timestamp| *timestamp = (*timestamp).max(report.timestamp_ms))
+                .or_insert(report.timestamp_ms);
+        } else if let Some(pilot) = &report.character_hint {
+            latest_report_by_pilot
+                .entry(pilot.clone())
                 .and_modify(|timestamp| *timestamp = (*timestamp).max(report.timestamp_ms))
                 .or_insert(report.timestamp_ms);
         }
@@ -1168,7 +1174,19 @@ fn active_reports_after_clears(all_reports: &[IntelReport]) -> Vec<IntelReport> 
                 .get(&report.system)
                 .copied()
                 .unwrap_or_default();
-            report.timestamp_ms > latest_clear
+            if report.timestamp_ms <= latest_clear {
+                return false;
+            }
+            if let Some(pilot) = &report.character_hint {
+                let latest_pilot_report = latest_report_by_pilot
+                    .get(pilot)
+                    .copied()
+                    .unwrap_or(report.timestamp_ms);
+                if report.timestamp_ms < latest_pilot_report {
+                    return false;
+                }
+            }
+            true
         })
         .cloned()
         .collect()
@@ -1873,6 +1891,83 @@ mod tests {
         assert_eq!(view.all_reports.len(), 2);
         assert_eq!(view.all_reports[0].id, "clear");
         assert!(view.active_reports.is_empty());
+    }
+
+    #[test]
+    fn newer_pilot_report_replaces_previous_system() {
+        let universe = Universe::load().unwrap();
+        let old_report = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Scout > 04-EHC Hulk Harley +1 Astero",
+            "test",
+            1,
+            None,
+        );
+        let new_report = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:15:02 ] Scout > 5IH-GL Hulk Harley +1 Astero",
+            "test",
+            2,
+            None,
+        );
+        let reports = old_report.into_iter().chain(new_report).collect::<Vec<_>>();
+
+        let view = build_map_view(&universe, "04-EHC".to_string(), 5, reports);
+        let active_systems = view
+            .active_reports
+            .iter()
+            .map(|report| report.system.as_str())
+            .collect::<Vec<_>>();
+        let old_node = view
+            .nodes
+            .iter()
+            .find(|node| node.name == "04-EHC")
+            .expect("old system should be visible");
+
+        assert_eq!(active_systems, vec!["5IH-GL"]);
+        assert_eq!(old_node.hostile_count, 0);
+        assert_eq!(old_node.severity, IntelSeverity::Clear);
+    }
+
+    #[test]
+    fn pilot_movement_keeps_other_pilots_active_in_old_system() {
+        let universe = Universe::load().unwrap();
+        let first_pilot = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Scout > 04-EHC Hulk Harley +1 Astero",
+            "test",
+            1,
+            None,
+        );
+        let second_pilot = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:55 ] Scout > 04-EHC Some Pilot +1 Astero",
+            "test",
+            2,
+            None,
+        );
+        let moved_first_pilot = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:15:02 ] Scout > 5IH-GL Hulk Harley +1 Astero",
+            "test",
+            3,
+            None,
+        );
+        let reports = first_pilot
+            .into_iter()
+            .chain(second_pilot)
+            .chain(moved_first_pilot)
+            .collect::<Vec<_>>();
+
+        let view = build_map_view(&universe, "04-EHC".to_string(), 5, reports);
+        let old_node = view
+            .nodes
+            .iter()
+            .find(|node| node.name == "04-EHC")
+            .expect("old system should be visible");
+
+        assert_eq!(old_node.hostile_count, 1);
+        assert_eq!(old_node.pilot_summary, vec!["Some Pilot".to_string()]);
     }
 
     #[test]
