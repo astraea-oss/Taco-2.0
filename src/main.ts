@@ -28,6 +28,7 @@ type GraphNode = {
   y: number;
   active_intel_count: number;
   hostile_count: number;
+  pilot_summary: string[];
   ship_summary: string[];
   severity: "clear" | "watch" | "danger";
   latest_report?: IntelReport;
@@ -48,6 +49,7 @@ type RegionNode = {
   external_region?: string | null;
   active_intel_count: number;
   hostile_count: number;
+  pilot_summary: string[];
   ship_summary: string[];
   severity: "clear" | "watch" | "danger";
   latest_report?: IntelReport;
@@ -624,10 +626,12 @@ function renderGraph(maxDistance: number) {
             const dangerClass = node.severity === "danger" ? "danger" : node.severity === "watch" ? "watch" : "";
             const centerClass = node.name === settings.current_system ? "center" : "";
             const ships = node.ship_summary.length ? node.ship_summary.join(", ") : "Unknown";
+            const players = node.pilot_summary.length ? node.pilot_summary.join(", ") : "Unknown";
+            const cleanTooltip = `Numbers: ${node.hostile_count || 0}\nPlayers: ${players}\nShips: ${ships}`;
             const tooltip = `${node.name} · ${node.distance}j · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`;
             return `
               <g class="map-node ${dangerClass} ${centerClass}" transform="translate(${node.x}, ${node.y})">
-                <title>${escapeHtml(tooltip)}</title>
+                <title>${escapeHtml(cleanTooltip)}</title>
                 <circle r="${node.name === settings.current_system ? 13 : 8}" />
                 ${node.hostile_count ? `<text class="count" y="-17">${node.hostile_count}</text>` : ""}
               </g>
@@ -662,13 +666,15 @@ function renderRegionGraph() {
             const currentClass = node.is_current ? "current" : "";
             const externalClass = node.external ? "external" : "";
             const ships = node.ship_summary.length ? node.ship_summary.join(", ") : "Unknown";
+            const players = node.pilot_summary.length ? node.pilot_summary.join(", ") : "Unknown";
+            const cleanTooltip = `Numbers: ${node.hostile_count || 0}\nPlayers: ${players}\nShips: ${ships}`;
             const regionLabel = node.external_region ?? "External";
             const tooltip = node.external
               ? `${node.name} · ${regionLabel} · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`
               : `${node.name} · ${node.security.toFixed(1)} · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`;
             return `
               <g class="region-node ${dangerClass} ${currentClass} ${externalClass}" transform="translate(${node.x}, ${node.y})">
-                <title>${escapeHtml(tooltip)}</title>
+                <title>${escapeHtml(cleanTooltip)}</title>
                 <rect x="${node.external ? -25 : -30}" y="-15" width="${node.external ? 50 : 60}" height="30" rx="${node.external ? 1 : 12}" />
                 <text class="system" y="-2">${node.name}</text>
                 <text class="security" y="10">${node.external ? escapeHtml(regionLabel) : node.security.toFixed(1)}</text>

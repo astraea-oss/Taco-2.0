@@ -126,6 +126,7 @@ pub struct GraphNode {
     y: f32,
     active_intel_count: usize,
     hostile_count: usize,
+    pilot_summary: Vec<String>,
     ship_summary: Vec<String>,
     severity: IntelSeverity,
     latest_report: Option<IntelReport>,
@@ -148,6 +149,7 @@ pub struct RegionNode {
     external_region: Option<String>,
     active_intel_count: usize,
     hostile_count: usize,
+    pilot_summary: Vec<String>,
     ship_summary: Vec<String>,
     severity: IntelSeverity,
     latest_report: Option<IntelReport>,
@@ -558,6 +560,9 @@ fn ship_alias_at(tokens: &[String], index: usize) -> Option<(&'static ShipAlias,
 }
 
 fn is_count_token(token: &str) -> bool {
+    if !token.is_empty() && token.chars().all(|char| char.is_ascii_digit()) {
+        return true;
+    }
     let count = token.strip_prefix('+').or_else(|| token.strip_suffix('+'));
     count
         .map(|count| !count.is_empty() && count.chars().all(|char| char.is_ascii_digit()))
@@ -623,6 +628,133 @@ fn report_ship_summary(reports: &[IntelReport]) -> Vec<String> {
     ships.sort();
     ships.dedup();
     ships
+}
+
+fn is_pilot_stop_token(token: &str) -> bool {
+    matches!(
+        token,
+        "clear"
+            | "clr"
+            | "status"
+            | "red"
+            | "reds"
+            | "spike"
+            | "jump"
+            | "jumped"
+            | "gate"
+            | "gates"
+            | "in"
+            | "at"
+            | "on"
+            | "wh"
+            | "bubble"
+            | "bubbles"
+            | "nv"
+            | "neut"
+            | "neuts"
+            | "neutral"
+            | "neutrals"
+            | "hostile"
+            | "hostiles"
+            | "fleet"
+            | "gang"
+            | "destroyer"
+            | "cruiser"
+            | "frigate"
+            | "dictor"
+            | "ship"
+            | "ships"
+    )
+}
+
+fn display_tokens(text: &str) -> Vec<String> {
+    text.split_whitespace()
+        .map(|token| {
+            token
+                .trim_matches(|char: char| {
+                    !char.is_ascii_alphanumeric() && char != '\'' && char != '-'
+                })
+                .to_string()
+        })
+        .filter(|token| !token.is_empty())
+        .collect()
+}
+
+fn pilot_phrase_from_tokens(tokens: &[String], from_end: bool) -> Option<String> {
+    let mut indexed_tokens = tokens.iter().enumerate().collect::<Vec<_>>();
+    if from_end {
+        indexed_tokens.reverse();
+    }
+
+    let lower_tokens = tokens
+        .iter()
+        .map(|token| token.to_ascii_lowercase())
+        .collect::<Vec<_>>();
+    let mut picked = Vec::new();
+
+    for (index, token) in indexed_tokens {
+        let lower = token.to_ascii_lowercase();
+        if lower.is_empty() || is_count_token(&lower) {
+            break;
+        }
+        if is_pilot_stop_token(&lower) {
+            if from_end && picked.is_empty() {
+                continue;
+            }
+            break;
+        }
+        if let Some((_, len)) = ship_alias_at(&lower_tokens, index) {
+            let next = lower_tokens.get(index + len);
+            let likely_ship_after_pilot = next
+                .map(|token| is_pilot_stop_token(token))
+                .unwrap_or(from_end)
+                && (from_end || !picked.is_empty());
+            if is_strong_ship_context(&lower_tokens, index, len) || likely_ship_after_pilot {
+                if from_end && picked.is_empty() {
+                    continue;
+                }
+                break;
+            }
+        }
+        picked.push(token.clone());
+        if picked.len() == 3 {
+            break;
+        }
+    }
+
+    if from_end {
+        picked.reverse();
+    }
+    let phrase = picked.join(" ").trim().to_string();
+    if phrase.is_empty() {
+        None
+    } else {
+        Some(phrase)
+    }
+}
+
+fn character_hint(line: &str, system: &str) -> Option<String> {
+    let body = message_body(line);
+    let body_lower = body.to_ascii_lowercase();
+    let system_lower = system.to_ascii_lowercase();
+    let system_index = body_lower.find(&system_lower)?;
+    let before = &body[..system_index];
+    let after_index = system_index + system.len();
+    let after = body.get(after_index..).unwrap_or_default();
+
+    pilot_phrase_from_tokens(&display_tokens(after), false)
+        .or_else(|| pilot_phrase_from_tokens(&display_tokens(before), true))
+        .or_else(|| chat_speaker(line))
+}
+
+fn report_pilot_summary(reports: &[IntelReport]) -> Vec<String> {
+    let mut pilots = reports
+        .iter()
+        .filter_map(|report| report.character_hint.clone())
+        .collect::<Vec<_>>();
+    pilots.sort();
+    pilots.dedup();
+    pilots
 }
 
 fn normalized_intel_line(line: &str) -> String {
@@ -702,16 +834,19 @@ fn parse_intel_line(
     };
     systems
         .into_iter()
-        .map(|system| IntelReport {
-            id: stable_report_id(&system, line, timestamp_ms, &severity),
-            system,
-            raw_line: line.trim().to_string(),
-            source: source.to_string(),
-            timestamp_ms,
-            severity: severity.clone(),
-            ship_hint: ship_hint(line),
-            character_hint: None,
-            distance: None,
+        .map(|system| {
+            let character_hint = character_hint(line, &system);
+            IntelReport {
+                id: stable_report_id(&system, line, timestamp_ms, &severity),
+                system,
+                raw_line: line.trim().to_string(),
+                source: source.to_string(),
+                timestamp_ms,
+                severity: severity.clone(),
+                ship_hint: ship_hint(line),
+                character_hint,
+                distance: None,
+            }
         })
         .collect()
 }
@@ -1131,6 +1266,7 @@ fn build_map_view(
                 IntelSeverity::Clear
             };
             let hostile_count = system_reports.iter().map(report_hostile_count).sum();
+            let pilot_summary = report_pilot_summary(&system_reports);
             let ship_summary = report_ship_summary(&system_reports);
             nodes.push(GraphNode {
                 id: universe
@@ -1143,6 +1279,7 @@ fn build_map_view(
                 y,
                 active_intel_count: system_reports.len(),
                 hostile_count,
+                pilot_summary,
                 ship_summary,
                 severity,
                 latest_report: system_reports
@@ -1213,6 +1350,7 @@ fn build_region_view(
                 IntelSeverity::Clear
             };
             let hostile_count = system_reports.iter().map(report_hostile_count).sum();
+            let pilot_summary = report_pilot_summary(&system_reports);
             let ship_summary = report_ship_summary(&system_reports);
             RegionNode {
                 id: system.id,
@@ -1224,6 +1362,7 @@ fn build_region_view(
                 external_region: system.external_region.clone(),
                 active_intel_count: system_reports.len(),
                 hostile_count,
+                pilot_summary,
                 ship_summary,
                 severity,
                 latest_report: system_reports
@@ -1491,6 +1630,8 @@ mod tests {
 
         assert_eq!(hulk_pilot[0].ship_hint.as_deref(), Some("ASTERO"));
         assert_eq!(vedmak_pilot[0].ship_hint, None);
+        assert_eq!(hulk_pilot[0].character_hint.as_deref(), Some("Hulk Harley"));
+        assert_eq!(vedmak_pilot[0].character_hint.as_deref(), Some("Skarovin"));
     }
 
     #[test]
@@ -1753,6 +1894,7 @@ mod tests {
             .expect("reported system should be visible");
         assert_eq!(node.active_intel_count, 1);
         assert_eq!(node.hostile_count, 4);
+        assert_eq!(node.pilot_summary, vec!["Hulk Harley".to_string()]);
         assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
     }
 
@@ -1777,6 +1919,7 @@ mod tests {
         assert_eq!(view.region_name, "Insmother");
         assert!(node.is_current);
         assert_eq!(node.hostile_count, 4);
+        assert_eq!(node.pilot_summary, vec!["Hulk Harley".to_string()]);
         assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
     }
 
