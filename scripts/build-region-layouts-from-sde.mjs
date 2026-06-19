@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
@@ -8,8 +8,12 @@ const inputDir = process.argv[2] ? join(root, process.argv[2]) : join(root, "sde
 const systemsPath = join(inputDir, "mapSolarSystems.csv");
 const jumpsPath = join(inputDir, "mapSolarSystemJumps.csv");
 const outputPath = join(root, "src-tauri", "resources", "regions.json");
+const overridesPath = join(root, "scripts", "region-layout-overrides.json");
 
 const regions = [{ id: 10000009, name: "Insmother" }];
+const layoutOverrides = existsSync(overridesPath)
+  ? JSON.parse(readFileSync(overridesPath, "utf8"))
+  : {};
 
 function readCsv(path) {
   return parse(readFileSync(path, "utf8"), {
@@ -39,6 +43,8 @@ for (const system of systems) {
 
 const output = regions.map((region) => {
   const regionSystems = [...byId.values()].filter((system) => system.regionId === region.id);
+  const override = layoutOverrides[region.name];
+  const overrideById = new Map((override?.systems ?? []).map((system) => [system.id, system]));
   const minX = Math.min(...regionSystems.map((system) => system.x));
   const maxX = Math.max(...regionSystems.map((system) => system.x));
   const minZ = Math.min(...regionSystems.map((system) => system.z));
@@ -59,12 +65,14 @@ const output = regions.map((region) => {
   return {
     id: region.id,
     name: region.name,
+    width: override?.width ?? 1000,
+    height: override?.height ?? 720,
     systems: regionSystems
       .map((system) => ({
         id: system.id,
         name: system.name,
-        x: Math.round(60 + ((system.x - minX) / xRange) * 880),
-        y: Math.round(50 + ((maxZ - system.z) / zRange) * 620),
+        x: overrideById.get(system.id)?.x ?? Math.round(60 + ((system.x - minX) / xRange) * 880),
+        y: overrideById.get(system.id)?.y ?? Math.round(50 + ((maxZ - system.z) / zRange) * 620),
         security: Number(system.security.toFixed(3)),
       }))
       .sort((a, b) => a.name.localeCompare(b.name)),

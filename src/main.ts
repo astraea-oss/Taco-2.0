@@ -64,6 +64,8 @@ type MapView = {
 type RegionView = {
   region_id: number;
   region_name: string;
+  width: number;
+  height: number;
   current_system: string;
   nodes: RegionNode[];
   edges: GraphEdge[];
@@ -639,7 +641,7 @@ function renderRegionGraph() {
   if (!regionView) return `<div class="empty map-empty">Loading region data...</div>`;
   const nodes = regionView.nodes;
   return `
-    <svg class="region-map" viewBox="0 0 1000 720" role="img" aria-label="${escapeHtml(regionView.region_name)} region map">
+    <svg class="region-map" viewBox="0 0 ${regionView.width} ${regionView.height}" role="img" aria-label="${escapeHtml(regionView.region_name)} region map">
       <g class="region-edges">
         ${regionView.edges
           .map((edge) => {

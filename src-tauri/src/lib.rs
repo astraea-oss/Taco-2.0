@@ -38,6 +38,8 @@ struct ShipAlias {
 pub struct RegionLayout {
     id: u32,
     name: String,
+    width: f32,
+    height: f32,
     systems: Vec<RegionSystem>,
     edges: Vec<GraphEdge>,
 }
@@ -150,6 +152,8 @@ pub struct RegionNode {
 pub struct RegionView {
     region_id: u32,
     region_name: String,
+    width: f32,
+    height: f32,
     current_system: String,
     nodes: Vec<RegionNode>,
     edges: Vec<GraphEdge>,
@@ -1225,6 +1229,8 @@ fn build_region_view(
     RegionView {
         region_id: selected_region.id,
         region_name: selected_region.name.clone(),
+        width: selected_region.width,
+        height: selected_region.height,
         current_system,
         nodes,
         edges: selected_region.edges.clone(),
