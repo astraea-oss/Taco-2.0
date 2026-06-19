@@ -117,7 +117,8 @@ let availableChannels: string[] = [];
 let systemQuery = "";
 let watchPathInput = "";
 let selectedChannel = "";
-let lastAlertId = "";
+let alertStatePrimed = false;
+const alertedReportIds = new Set<string>();
 let settingsOpen = false;
 let intelScrollTop = 0;
 let viewMode: "nearby" | "region" = "nearby";
@@ -877,11 +878,15 @@ async function refresh() {
   regionView = await invokeWithTimeout<RegionView>("get_region_view", {
     currentSystem: settings.current_system,
   });
-  const latest = mapView.active_reports.find((report) => isInRange(report));
-  if (latest && latest.id !== lastAlertId && latest.severity === "danger") {
-    lastAlertId = latest.id;
+  const alertCandidates = mapView.active_reports.filter(
+    (report) => isInRange(report) && report.severity === "danger",
+  );
+  const newAlert = alertCandidates.find((report) => !alertedReportIds.has(report.id));
+  if (alertStatePrimed && newAlert) {
     playAlert();
   }
+  alertCandidates.forEach((report) => alertedReportIds.add(report.id));
+  alertStatePrimed = true;
   if (!settingsOpen) {
     render();
   }
