@@ -227,6 +227,11 @@ h2 {
   border-color: #f0b84f;
 }
 
+.tools-button.active {
+  border-color: #f0b84f;
+  color: #f0b84f;
+}
+
 .panel {
   padding: 14px 0;
   border-top: 1px solid #263039;
@@ -458,6 +463,13 @@ select:focus {
   max-height: min(520px, 100%);
 }
 
+.region-map {
+  display: block;
+  width: min(100%, 980px);
+  height: auto;
+  max-height: 100%;
+}
+
 .range-rows line {
   stroke: #1f2a31;
   stroke-width: 1;
@@ -509,6 +521,71 @@ select:focus {
 .map-node .count {
   font-size: 10px;
   fill: #ffb1ab;
+}
+
+.region-edges line {
+  stroke: #52606a;
+  stroke-width: 1.25;
+}
+
+.region-edges line.active {
+  stroke: #8c3938;
+  stroke-width: 1.6;
+}
+
+.region-node rect {
+  fill: #d7e9f5;
+  stroke: #5f93bd;
+  stroke-width: 2;
+}
+
+.region-node.current rect {
+  fill: #2e3540;
+  stroke: #f0b84f;
+  stroke-width: 3;
+}
+
+.region-node.danger rect {
+  fill: #471c1f;
+  stroke: #ff665d;
+}
+
+.region-node.watch rect {
+  fill: #3b3120;
+  stroke: #f0b84f;
+}
+
+.region-node text {
+  text-anchor: middle;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #0d1114;
+  stroke-width: 3px;
+}
+
+.region-node .system {
+  fill: #061016;
+  font-size: 10px;
+  stroke-width: 0;
+}
+
+.region-node.current .system,
+.region-node.danger .system,
+.region-node.watch .system {
+  fill: #e7edf2;
+  stroke-width: 3px;
+}
+
+.region-node .security {
+  fill: #d01828;
+  font-size: 8px;
+  stroke-width: 0;
+}
+
+.region-node .count {
+  fill: #ffb1ab;
+  font-size: 11px;
+  stroke-width: 4px;
 }
 
 .settings-backdrop {

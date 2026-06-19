@@ -13,6 +13,7 @@ use tauri::{AppHandle, Manager, State};
 
 const UNIVERSE_JSON: &str = include_str!("../resources/universe.json");
 const SHIP_TYPES_JSON: &str = include_str!("../resources/ship_types.json");
+const REGIONS_JSON: &str = include_str!("../resources/regions.json");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SolarSystem {
@@ -31,6 +32,23 @@ pub struct ShipType {
 struct ShipAlias {
     canonical: String,
     tokens: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RegionLayout {
+    id: u32,
+    name: String,
+    systems: Vec<RegionSystem>,
+    edges: Vec<GraphEdge>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RegionSystem {
+    id: u32,
+    name: String,
+    x: f32,
+    y: f32,
+    security: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,10 +125,34 @@ pub struct GraphNode {
     latest_report: Option<IntelReport>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphEdge {
     from: String,
     to: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RegionNode {
+    id: u32,
+    name: String,
+    x: f32,
+    y: f32,
+    security: f32,
+    active_intel_count: usize,
+    hostile_count: usize,
+    ship_summary: Vec<String>,
+    severity: IntelSeverity,
+    latest_report: Option<IntelReport>,
+    is_current: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RegionView {
+    region_id: u32,
+    region_name: String,
+    current_system: String,
+    nodes: Vec<RegionNode>,
+    edges: Vec<GraphEdge>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -134,6 +176,7 @@ pub struct WatchStatus {
 
 pub struct AppState {
     universe: Universe,
+    regions: Vec<RegionLayout>,
     settings: Mutex<Settings>,
     reports: Mutex<Vec<IntelReport>>,
     file_states: Mutex<HashMap<String, FilePollState>>,
@@ -218,6 +261,12 @@ impl Universe {
             }
         }
         (distances, parents)
+    }
+}
+
+impl RegionLayout {
+    fn load_all() -> Result<Vec<Self>> {
+        Ok(serde_json::from_str(REGIONS_JSON)?)
     }
 }
 
@@ -953,6 +1002,33 @@ fn poll_logs(state: State<'_, AppState>) -> Result<Vec<IntelReport>, String> {
     Ok(unique_new_reports)
 }
 
+fn active_reports_after_clears(all_reports: &[IntelReport]) -> Vec<IntelReport> {
+    let mut latest_clear_by_system: HashMap<String, u128> = HashMap::new();
+    for report in all_reports {
+        if report.severity == IntelSeverity::Clear {
+            latest_clear_by_system
+                .entry(report.system.clone())
+                .and_modify(|timestamp| *timestamp = (*timestamp).max(report.timestamp_ms))
+                .or_insert(report.timestamp_ms);
+        }
+    }
+
+    all_reports
+        .iter()
+        .filter(|report| {
+            if report.severity == IntelSeverity::Clear {
+                return false;
+            }
+            let latest_clear = latest_clear_by_system
+                .get(&report.system)
+                .copied()
+                .unwrap_or_default();
+            report.timestamp_ms > latest_clear
+        })
+        .cloned()
+        .collect()
+}
+
 fn build_map_view(
     universe: &Universe,
     current_system: String,
@@ -971,30 +1047,7 @@ fn build_map_view(
         .collect::<Vec<_>>();
     all_reports.sort_by_key(|report| std::cmp::Reverse(report.timestamp_ms));
 
-    let mut latest_clear_by_system: HashMap<String, u128> = HashMap::new();
-    for report in &all_reports {
-        if report.severity == IntelSeverity::Clear {
-            latest_clear_by_system
-                .entry(report.system.clone())
-                .and_modify(|timestamp| *timestamp = (*timestamp).max(report.timestamp_ms))
-                .or_insert(report.timestamp_ms);
-        }
-    }
-
-    let mut active_reports = all_reports
-        .iter()
-        .filter(|report| {
-            if report.severity == IntelSeverity::Clear {
-                return false;
-            }
-            let latest_clear = latest_clear_by_system
-                .get(&report.system)
-                .copied()
-                .unwrap_or_default();
-            report.timestamp_ms > latest_clear
-        })
-        .cloned()
-        .collect::<Vec<_>>();
+    let mut active_reports = active_reports_after_clears(&all_reports);
     active_reports.sort_by_key(|report| {
         (
             report.distance.is_none(),
@@ -1111,18 +1164,93 @@ fn build_map_view(
     }
 }
 
+fn build_region_view(
+    regions: &[RegionLayout],
+    current_system: String,
+    reports: Vec<IntelReport>,
+) -> RegionView {
+    let selected_region = regions
+        .iter()
+        .find(|region| {
+            region
+                .systems
+                .iter()
+                .any(|system| system.name == current_system)
+        })
+        .or_else(|| regions.first())
+        .expect("at least one bundled region layout should be available");
+    let mut all_reports = reports;
+    all_reports.sort_by_key(|report| std::cmp::Reverse(report.timestamp_ms));
+    let active_reports = active_reports_after_clears(&all_reports);
+
+    let nodes = selected_region
+        .systems
+        .iter()
+        .map(|system| {
+            let system_reports = active_reports
+                .iter()
+                .filter(|report| report.system == system.name)
+                .cloned()
+                .collect::<Vec<_>>();
+            let severity = if system_reports
+                .iter()
+                .any(|report| report.severity == IntelSeverity::Danger)
+            {
+                IntelSeverity::Danger
+            } else if !system_reports.is_empty() {
+                IntelSeverity::Watch
+            } else {
+                IntelSeverity::Clear
+            };
+            let hostile_count = system_reports.iter().map(report_hostile_count).sum();
+            let ship_summary = report_ship_summary(&system_reports);
+            RegionNode {
+                id: system.id,
+                name: system.name.clone(),
+                x: system.x,
+                y: system.y,
+                security: system.security,
+                active_intel_count: system_reports.len(),
+                hostile_count,
+                ship_summary,
+                severity,
+                latest_report: system_reports
+                    .into_iter()
+                    .max_by_key(|report| report.timestamp_ms),
+                is_current: system.name == current_system,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    RegionView {
+        region_id: selected_region.id,
+        region_name: selected_region.name.clone(),
+        current_system,
+        nodes,
+        edges: selected_region.edges.clone(),
+    }
+}
+
 #[tauri::command]
 fn get_map_view(current_system: String, radius: u8, state: State<'_, AppState>) -> MapView {
     let reports = state.reports.lock().unwrap().clone();
     build_map_view(&state.universe, current_system, radius, reports)
 }
 
+#[tauri::command]
+fn get_region_view(current_system: String, state: State<'_, AppState>) -> RegionView {
+    let reports = state.reports.lock().unwrap().clone();
+    build_region_view(&state.regions, current_system, reports)
+}
+
 pub fn run() {
     let universe = Universe::load().expect("bundled universe data should be valid");
+    let regions = RegionLayout::load_all().expect("bundled region data should be valid");
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
             universe,
+            regions,
             settings: Mutex::new(Settings::default()),
             reports: Mutex::new(Vec::new()),
             file_states: Mutex::new(HashMap::new()),
@@ -1137,7 +1265,8 @@ pub fn run() {
             scan_log_channels,
             rescan_watch_paths,
             poll_logs,
-            get_map_view
+            get_map_view,
+            get_region_view
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1476,6 +1605,7 @@ mod tests {
         fs::write(&path, utf16_bytes(first_line)).unwrap();
         let state = AppState {
             universe: Universe::load().unwrap(),
+            regions: RegionLayout::load_all().unwrap(),
             settings: Mutex::new(Settings::default()),
             reports: Mutex::new(Vec::new()),
             file_states: Mutex::new(HashMap::new()),
@@ -1608,6 +1738,30 @@ mod tests {
             .find(|node| node.name == "04-EHC")
             .expect("reported system should be visible");
         assert_eq!(node.active_intel_count, 1);
+        assert_eq!(node.hostile_count, 4);
+        assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
+    }
+
+    #[test]
+    fn region_view_selects_insmother_and_overlays_intel() {
+        let universe = Universe::load().unwrap();
+        let regions = RegionLayout::load_all().unwrap();
+        let reports = parse_intel_line(
+            &universe,
+            "[ 2026.06.17 11:14:52 ] Hulk Harley > 04-EHC Hulk Harley +4 Asteros",
+            "test",
+            1,
+            None,
+        );
+
+        let view = build_region_view(&regions, "04-EHC".to_string(), reports);
+        let node = view
+            .nodes
+            .iter()
+            .find(|node| node.name == "04-EHC")
+            .expect("04-EHC should be present in Insmother");
+        assert_eq!(view.region_name, "Insmother");
+        assert!(node.is_current);
         assert_eq!(node.hostile_count, 4);
         assert_eq!(node.ship_summary, vec!["ASTERO".to_string()]);
     }

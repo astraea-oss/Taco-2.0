@@ -38,6 +38,20 @@ type GraphEdge = {
   to: string;
 };
 
+type RegionNode = {
+  id: number;
+  name: string;
+  x: number;
+  y: number;
+  security: number;
+  active_intel_count: number;
+  hostile_count: number;
+  ship_summary: string[];
+  severity: "clear" | "watch" | "danger";
+  latest_report?: IntelReport;
+  is_current: boolean;
+};
+
 type MapView = {
   center: string;
   radius: number;
@@ -45,6 +59,14 @@ type MapView = {
   edges: GraphEdge[];
   active_reports: IntelReport[];
   all_reports: IntelReport[];
+};
+
+type RegionView = {
+  region_id: number;
+  region_name: string;
+  current_system: string;
+  nodes: RegionNode[];
+  edges: GraphEdge[];
 };
 
 type IntelReport = {
@@ -82,6 +104,7 @@ let settings: Settings = {
   always_on_top: false,
 };
 let mapView: MapView | null = null;
+let regionView: RegionView | null = null;
 let watchStatus: WatchStatus = { watched_channels: 0, matched_files: [], active_reports: 0, read_errors: [] };
 let allSystems: string[] = [];
 let availableChannels: string[] = [];
@@ -91,6 +114,7 @@ let selectedChannel = "";
 let lastAlertId = "";
 let settingsOpen = false;
 let intelScrollTop = 0;
+let viewMode: "nearby" | "region" = "nearby";
 
 function svgIcon(paths: string, size: number) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
@@ -316,6 +340,8 @@ function render() {
   const activeReports = mapView?.active_reports ?? [];
   const allReports = mapView?.all_reports ?? activeReports;
   const nearbyReports = activeReports.filter(isInRange);
+  const regionSystems = new Set(regionView?.nodes.map((node) => node.name) ?? []);
+  const regionReports = activeReports.filter((report) => regionSystems.has(report.system));
   const filteredSystems = allSystems
     .filter((name) => name.toLowerCase().includes(systemQuery.toLowerCase()))
     .slice(0, 10);
@@ -331,7 +357,7 @@ function render() {
           <button id="full-view" class="compact-exit" title="Full view" aria-label="Full view">${icons.expand}</button>
         </header>
         <div class="compact-map">
-          ${renderGraph(maxDistance)}
+          ${viewMode === "region" ? renderRegionGraph() : renderGraph(maxDistance)}
         </div>
       </section>
     `;
@@ -366,15 +392,19 @@ function render() {
             <strong>${watchStatus.active_reports}</strong>
           </div>
         </div>
-        <button id="open-tools" class="settings-button tools-button" type="button">${icons.tools}<span>Tools</span></button>
+        <button id="open-tools" class="settings-button tools-button ${viewMode === "region" ? "active" : ""}" type="button" title="Toggle region view">${icons.tools}<span>${viewMode === "region" ? "Nearby" : "Region"}</span></button>
         <button id="open-settings" class="settings-button">${icons.radar}<span>Settings</span></button>
       </aside>
 
       <section class="map-area">
         <div class="topbar">
           <div>
-            <h2>${settings.current_system}</h2>
-            <p>${nearbyReports.length} active reports inside ${settings.jump_radius} jumps</p>
+            <h2>${viewMode === "region" ? regionView?.region_name ?? "Region" : settings.current_system}</h2>
+            <p>${
+              viewMode === "region"
+                ? `${regionReports.length} active reports in ${regionView?.region_name ?? "region"}`
+                : `${nearbyReports.length} active reports inside ${settings.jump_radius} jumps`
+            }</p>
           </div>
           <div class="topbar-actions">
             <div class="status-pill">${mapView ? "Live" : "Loading"}</div>
@@ -384,7 +414,7 @@ function render() {
           </div>
         </div>
         <div class="map-wrap">
-          ${renderGraph(maxDistance)}
+          ${viewMode === "region" ? renderRegionGraph() : renderGraph(maxDistance)}
         </div>
       </section>
 
@@ -605,6 +635,45 @@ function renderGraph(maxDistance: number) {
   `;
 }
 
+function renderRegionGraph() {
+  if (!regionView) return `<div class="empty map-empty">Loading region data...</div>`;
+  const nodes = regionView.nodes;
+  return `
+    <svg class="region-map" viewBox="0 0 1000 720" role="img" aria-label="${escapeHtml(regionView.region_name)} region map">
+      <g class="region-edges">
+        ${regionView.edges
+          .map((edge) => {
+            const from = nodes.find((node) => node.name === edge.from);
+            const to = nodes.find((node) => node.name === edge.to);
+            if (!from || !to) return "";
+            const activeClass = from.hostile_count || to.hostile_count ? " active" : "";
+            return `<line class="${activeClass}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" />`;
+          })
+          .join("")}
+      </g>
+      <g class="region-nodes">
+        ${nodes
+          .map((node) => {
+            const dangerClass = node.severity === "danger" ? "danger" : node.severity === "watch" ? "watch" : "";
+            const currentClass = node.is_current ? "current" : "";
+            const ships = node.ship_summary.length ? node.ship_summary.join(", ") : "Unknown";
+            const tooltip = `${node.name} · ${node.security.toFixed(1)} · ${severityLabel(node.latest_report)}\nNumbers: ${node.hostile_count || 0}\nShips: ${ships}`;
+            return `
+              <g class="region-node ${dangerClass} ${currentClass}" transform="translate(${node.x}, ${node.y})">
+                <title>${escapeHtml(tooltip)}</title>
+                <rect x="-30" y="-15" width="60" height="30" rx="12" />
+                <text class="system" y="-2">${node.name}</text>
+                <text class="security" y="10">${node.security.toFixed(1)}</text>
+                ${node.hostile_count ? `<text class="count" x="33" y="-16">${node.hostile_count}</text>` : ""}
+              </g>
+            `;
+          })
+          .join("")}
+      </g>
+    </svg>
+  `;
+}
+
 function bindEvents() {
   const currentWindow = getCurrentWindow();
   document.querySelector<HTMLElement>(".brand-icon")?.addEventListener("mousedown", (event) => {
@@ -655,6 +724,10 @@ function bindEvents() {
         console.error("Failed to open external link", error);
       }
     });
+  });
+  document.querySelector<HTMLButtonElement>("#open-tools")?.addEventListener("click", () => {
+    viewMode = viewMode === "nearby" ? "region" : "nearby";
+    render();
   });
   document.querySelector<HTMLButtonElement>("#open-settings")?.addEventListener("click", () => {
     settingsOpen = true;
@@ -786,6 +859,9 @@ async function refresh() {
   mapView = await invokeWithTimeout<MapView>("get_map_view", {
     currentSystem: settings.current_system,
     radius: settings.jump_radius,
+  });
+  regionView = await invokeWithTimeout<RegionView>("get_region_view", {
+    currentSystem: settings.current_system,
   });
   const latest = mapView.active_reports.find((report) => isInRange(report));
   if (latest && latest.id !== lastAlertId && latest.severity === "danger") {
