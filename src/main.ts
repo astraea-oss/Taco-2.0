@@ -859,7 +859,16 @@ function normalizeSettings(loaded: Settings): Settings {
   };
 }
 
-async function invokeWithTimeout<T>(command: string, args?: Record<string, unknown>, timeoutMs = 3000): Promise<T> {
+const COMMAND_TIMEOUT_MS = 3000;
+const POLL_LOG_TIMEOUT_MS = 30000;
+
+let refreshInFlight = false;
+
+async function invokeWithTimeout<T>(
+  command: string,
+  args?: Record<string, unknown>,
+  timeoutMs = COMMAND_TIMEOUT_MS,
+): Promise<T> {
   return await Promise.race([
     invoke<T>(command, args),
     new Promise<T>((_, reject) => {
@@ -869,26 +878,38 @@ async function invokeWithTimeout<T>(command: string, args?: Record<string, unkno
 }
 
 async function refresh() {
-  await invokeWithTimeout("poll_logs");
-  watchStatus = await invokeWithTimeout<WatchStatus>("get_watch_status");
-  mapView = await invokeWithTimeout<MapView>("get_map_view", {
-    currentSystem: settings.current_system,
-    radius: settings.jump_radius,
-  });
-  regionView = await invokeWithTimeout<RegionView>("get_region_view", {
-    currentSystem: settings.current_system,
-  });
-  const alertCandidates = mapView.active_reports.filter(
-    (report) => isInRange(report) && report.severity === "danger",
-  );
-  const newAlert = alertCandidates.find((report) => !alertedReportIds.has(report.id));
-  if (alertStatePrimed && newAlert) {
-    playAlert();
+  if (refreshInFlight) {
+    return;
   }
-  alertCandidates.forEach((report) => alertedReportIds.add(report.id));
-  alertStatePrimed = true;
-  if (!settingsOpen) {
-    render();
+  refreshInFlight = true;
+  try {
+    try {
+      await invokeWithTimeout("poll_logs", undefined, POLL_LOG_TIMEOUT_MS);
+    } catch (error) {
+      console.error("Log polling failed", error);
+    }
+    watchStatus = await invokeWithTimeout<WatchStatus>("get_watch_status");
+    mapView = await invokeWithTimeout<MapView>("get_map_view", {
+      currentSystem: settings.current_system,
+      radius: settings.jump_radius,
+    });
+    regionView = await invokeWithTimeout<RegionView>("get_region_view", {
+      currentSystem: settings.current_system,
+    });
+    const alertCandidates = mapView.active_reports.filter(
+      (report) => isInRange(report) && report.severity === "danger",
+    );
+    const newAlert = alertCandidates.find((report) => !alertedReportIds.has(report.id));
+    if (alertStatePrimed && newAlert) {
+      playAlert();
+    }
+    alertCandidates.forEach((report) => alertedReportIds.add(report.id));
+    alertStatePrimed = true;
+    if (!settingsOpen) {
+      render();
+    }
+  } finally {
+    refreshInFlight = false;
   }
 }
 
@@ -898,7 +919,9 @@ async function boot() {
     await getCurrentWindow().setAlwaysOnTop(settings.always_on_top);
     allSystems = await invokeWithTimeout<string[]>("list_systems");
     await refresh();
-    setInterval(refresh, 1000);
+    setInterval(() => {
+      refresh().catch((error) => console.error("Refresh failed", error));
+    }, 1000);
   } catch (error) {
     app.innerHTML = `<pre class="fatal">Startup failed:\n${String(error)}</pre>`;
   }
